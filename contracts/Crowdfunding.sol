@@ -5,12 +5,10 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 contract Crowdfunding is ReentrancyGuard {
 
     struct Campaign {
-        address creator;
         address payable creator;
         uint256 goal;
         uint256 deadline;
         uint256 amountRaised;
-        bool claimed;
         bool withdrawn;
         bool exists;
     }
@@ -18,7 +16,6 @@ contract Crowdfunding is ReentrancyGuard {
     uint256 public campaignCount;
     mapping(uint256 => Campaign) public campaigns;
     mapping(uint256 => mapping(address => uint256)) public contributions;
-    uint256 public campaignCount;
 
     event CampaignCreated(uint256 indexed id, address indexed creator, uint256 goal, uint256 deadline);
     event ContributionReceived(uint256 indexed id, address indexed contributor, uint256 amount);
@@ -26,10 +23,24 @@ contract Crowdfunding is ReentrancyGuard {
     event RefundIssued(uint256 indexed id, address indexed contributor, uint256 amount);
 
     /// @notice Crée une nouvelle campagne
-    /// @param goal Objectif en wei (ex: 1 ETH = 1e18)
-    /// @param duration Durée en secondes (ex: 7 jours = 604800)
-    function createCampaign(uint256 goal, uint256 duration) external {
-        // TODO — à implémenter par l'équipe
+    /// @param goalInEther Objectif en ETH entiers (ex: 5 pour 5 ETH)
+    /// @param deadline Timestamp Unix de la date limite (ex: 1780000000)
+    function createCampaign(uint256 goalInEther, uint256 deadline) external returns (uint256) {
+        require(goalInEther > 0, "Objectif doit etre > 0");
+        require(deadline > block.timestamp, "La deadline doit etre dans le futur");
+
+        uint256 id = campaignCount++;
+        campaigns[id] = Campaign({
+            creator: payable(msg.sender),
+            goal: goalInEther * 1 ether,
+            deadline: deadline,
+            amountRaised: 0,
+            withdrawn: false,
+            exists: true
+        });
+
+        emit CampaignCreated(id, msg.sender, campaigns[id].goal, deadline);
+        return id;
     }
 
     /// @notice Contribuer à une campagne
