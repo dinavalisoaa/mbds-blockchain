@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { connectWallet, disconnectWallet } from './services/wallet.js';
 import { fetchAllCampaigns, checkContract } from './services/campaigns.js';
+import { txRefundAll } from './services/transactions.js';
 import WalletBar    from './components/WalletBar.jsx';
 import CreateForm   from './components/CreateForm.jsx';
 import CampaignCard from './components/CampaignCard.jsx';
@@ -10,6 +11,9 @@ export default function App() {
   const [campaigns,  setCampaigns]  = useState([]);
   const [loading,    setLoading]    = useState(false);
   const [diagnostic, setDiagnostic] = useState(null);
+  const [autoRefundMsg, setAutoRefundMsg] = useState(null); // { type, msg }
+  // Track which campaign IDs we already attempted refundAll for (avoid re-firing on reload)
+  const refundedIds = useRef(new Set());
 
   // Verify contract on-chain at startup (no wallet needed)
   useEffect(() => {
@@ -34,6 +38,48 @@ export default function App() {
     if (wallet.connected) loadCampaigns();
     else setCampaigns([]);
   }, [wallet.connected]);
+
+  // Auto-refundAll: when creator connects, refund all failed campaigns automatically
+  useEffect(() => {
+    if (!wallet.connected || campaigns.length === 0) return;
+
+    const addr = wallet.address?.toLowerCase();
+    const toRefund = campaigns.filter(c =>
+      c.status === 'failed' &&
+      !c.withdrawn &&
+      c.creator.toLowerCase() === addr &&
+      !refundedIds.current.has(c.id)
+    );
+
+    if (toRefund.length === 0) return;
+
+    // Mark as attempted immediately to prevent double-fire
+    toRefund.forEach(c => refundedIds.current.add(c.id));
+
+    setAutoRefundMsg({ type: 'info', msg: `Remboursement automatique en cours pour ${toRefund.length} campagne(s)…` });
+
+    (async () => {
+      let ok = 0;
+      let fail = 0;
+      for (const c of toRefund) {
+        try {
+          await txRefundAll(c.id);
+          ok++;
+        } catch (e) {
+          fail++;
+          console.error(`refundAll(${c.id}) failed:`, e.message);
+        }
+      }
+      if (fail === 0) {
+        setAutoRefundMsg({ type: 'success', msg: `✓ ${ok} campagne(s) remboursée(s) automatiquement.` });
+      } else {
+        setAutoRefundMsg({ type: 'error', msg: `${ok} réussie(s), ${fail} échouée(s) — vérifiez MetaMask.` });
+      }
+      // Reload to reflect new withdrawn state
+      await loadCampaigns();
+      setTimeout(() => setAutoRefundMsg(null), 6000);
+    })();
+  }, [campaigns, wallet.connected, wallet.address]);
 
   // Reset on MetaMask account/network change
   useEffect(() => {
@@ -60,6 +106,8 @@ export default function App() {
     disconnectWallet();
     setWallet({ connected: false, address: null, network: null });
     setCampaigns([]);
+    refundedIds.current.clear();
+    setAutoRefundMsg(null);
   };
 
   const renderList = () => {
@@ -94,6 +142,12 @@ export default function App() {
           <i className={`ti ti-refresh ${loading ? 'spinning' : ''}`} /> Actualiser
         </button>
       </div>
+
+      {autoRefundMsg && (
+        <p className={`status-msg ${autoRefundMsg.type}`} style={{ margin: '0.5rem 0' }}>
+          <i className="ti ti-refresh" /> {autoRefundMsg.msg}
+        </p>
+      )}
 
       <div id="campaigns-list">{renderList()}</div>
     </div>

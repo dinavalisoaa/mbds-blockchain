@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { txContribute, txWithdraw, txRefund, txCancelCampaign } from '../services/transactions.js';
+import { ipfsUrl } from '../services/pinata.js';
 
 const BADGE = { active: 'En cours', success: 'Succès', failed: 'Échoué', cancelled: 'Annulée' };
 
@@ -22,8 +23,20 @@ export default function CampaignCard({ campaign: c, wallet, onAction }) {
     }
   };
 
+  const imgUrl = ipfsUrl(c.imageIPFS);
+
   return (
     <article className="campaign-card">
+      {imgUrl && (
+        <img
+          src={imgUrl}
+          alt={c.title}
+          className="campaign-img"
+          style={{ width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: '8px 8px 0 0' }}
+          onError={e => { e.target.style.display = 'none'; }}
+        />
+      )}
+
       <div className="campaign-top">
         <span className="campaign-title">{c.title}</span>
         <span className={`badge ${c.status}`}>{BADGE[c.status]}</span>
@@ -80,7 +93,7 @@ export default function CampaignCard({ campaign: c, wallet, onAction }) {
       {c.status === 'failed' && c.myContrib > 0n && (
         <button className="btn-ghost btn-block" disabled={loading}
           onClick={() => run(() => txRefund(c.id))}>
-          <i className="ti ti-receipt-refund" /> Remboursement {c.myContribEth} ETH
+          <i className="ti ti-receipt-refund" /> Récupérer mon remboursement {c.myContribEth} ETH
         </button>
       )}
     </article>

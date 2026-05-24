@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev":     "vite",
-    "build":   "vite build",
-    "preview": "vite preview",
-    "test":    "hardhat test",
-    "compile": "hardhat compile"
+    "dev":       "vite",
+    "build":     "vite build",
+    "preview":   "vite preview",
+    "predeploy": "vite build",
+    "deploy":    "gh-pages -d dist",
+    "test":      "hardhat test",
+    "compile":   "hardhat compile"
   },
   "repository": {
     "type": "git",
@@ -22,6 +24,7 @@
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",
     "@openzeppelin/contracts":          "^5.6.1",
     "@vitejs/plugin-react":             "^4.3.0",
+    "gh-pages":                         "^6.1.0",
     "hardhat":                          "^2.22.18",
     "vite":                             "^5.4.0"
   }
