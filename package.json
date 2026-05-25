@@ -3,29 +3,30 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev":       "vite front",
-    "build":     "vite build front",
-    "preview":   "vite preview front",
+    "dev": "vite front",
+    "build": "vite build front",
+    "preview": "vite preview front",
     "predeploy": "vite build front",
-    "deploy":    "gh-pages -d front/dist",
-    "test":      "hardhat test",
-    "compile":   "hardhat compile"
+    "deploy": "gh-pages -d front/dist",
+    "test": "hardhat test",
+    "compile": "hardhat compile"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dinavalisoaa/mbds-blockchain.git"
   },
   "dependencies": {
-    "ethers":     "^6.13.0",
-    "react":      "^18.3.1",
-    "react-dom":  "^18.3.1"
+    "ethers": "^6.13.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.15.1"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",
-    "@openzeppelin/contracts":          "^5.6.1",
-    "@vitejs/plugin-react":             "^4.3.0",
-    "gh-pages":                         "^6.1.0",
-    "hardhat":                          "^2.22.18",
-    "vite":                             "^5.4.0"
+    "@openzeppelin/contracts": "^5.6.1",
+    "@vitejs/plugin-react": "^4.3.0",
+    "gh-pages": "^6.1.0",
+    "hardhat": "^2.22.18",
+    "vite": "^5.4.0"
   }
 }

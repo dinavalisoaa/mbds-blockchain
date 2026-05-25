@@ -1,9 +1,4 @@
-export default function EmptyState({
-  icon     = 'ti-mood-empty',
-  title    = 'Rien ici pour le moment',
-  subtitle,
-  action,
-}) {
+export default function EmptyState({ icon = 'ti-mood-empty', title = 'Rien ici pour le moment', subtitle, action }) {
   return (
     <div className="empty-state">
       <i className={`ti ${icon}`} style={{ fontSize: 32, display: 'block', marginBottom: 10, opacity: 0.4 }} />

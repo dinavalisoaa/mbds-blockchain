@@ -17,11 +17,7 @@ export default function Button({
   ].filter(Boolean).join(' ');
 
   return (
-    <button
-      className={classes}
-      disabled={disabled || loading}
-      {...props}
-    >
+    <button className={classes} disabled={disabled || loading} {...props}>
       {loading
         ? <i className="ti ti-loader-2 spinning" />
         : icon && <i className={`ti ${icon}`} />

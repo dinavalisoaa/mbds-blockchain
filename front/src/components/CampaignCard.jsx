@@ -48,12 +48,7 @@ export default function CampaignCard({ campaign: c, wallet, onAction }) {
         <span><i className="ti ti-clock" /> {c.timeLeft}</span>
       </div>
 
-      <ProgressBar
-        value={c.amountRaisedEth}
-        goal={c.goalEth}
-        percent={c.progress}
-        status={c.status}
-      />
+      <ProgressBar value={c.amountRaisedEth} goal={c.goalEth} percent={c.progress} status={c.status} />
 
       {c.myContrib > 0n && (
         <p className="my-contrib">
@@ -66,19 +61,11 @@ export default function CampaignCard({ campaign: c, wallet, onAction }) {
       {c.status === 'active' && (
         <div className="contrib-row">
           <Input
-            type="number"
-            min="0.001"
-            step="0.001"
-            placeholder="Montant ETH"
-            value={amount}
-            onChange={e => setAmount(e.target.value)}
+            type="number" min="0.001" step="0.001" placeholder="Montant ETH"
+            value={amount} onChange={e => setAmount(e.target.value)}
           />
-          <Button
-            variant="primary"
-            icon="ti-heart"
-            loading={loading}
-            onClick={() => run(() => txContribute(c.id, amount))}
-          >
+          <Button variant="primary" icon="ti-heart" loading={loading}
+            onClick={() => run(() => txContribute(c.id, amount))}>
             Contribuer
           </Button>
         </div>

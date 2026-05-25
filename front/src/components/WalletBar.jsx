@@ -26,24 +26,13 @@ export default function WalletBar({ wallet, onConnect, onDisconnect }) {
           <p className="network-tag">Sepolia Testnet</p>
           <h1>Crowdfunding on-chain</h1>
         </div>
-
         <div className="header-actions">
           {wallet.connected ? (
-            <Button
-              variant="ghost"
-              icon="ti-plug-x"
-              className="btn-disconnect"
-              onClick={onDisconnect}
-            >
+            <Button variant="ghost" icon="ti-plug-x" className="btn-disconnect" onClick={onDisconnect}>
               Déconnecter
             </Button>
           ) : (
-            <Button
-              variant="primary"
-              icon="ti-wallet"
-              loading={connecting}
-              onClick={handleConnect}
-            >
+            <Button variant="primary" icon="ti-wallet" loading={connecting} onClick={handleConnect}>
               Connecter MetaMask
             </Button>
           )}

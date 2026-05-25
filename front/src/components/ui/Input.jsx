@@ -1,13 +1,6 @@
 import { useId } from 'react';
 
-export default function Input({
-  label,
-  required = false,
-  error,
-  hint,
-  className = '',
-  ...props
-}) {
+export default function Input({ label, required = false, error, hint, className = '', ...props }) {
   const id = useId();
 
   return (
@@ -30,9 +23,7 @@ export default function Input({
         </span>
       )}
       {!error && hint && (
-        <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-          {hint}
-        </span>
+        <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{hint}</span>
       )}
     </div>
   );

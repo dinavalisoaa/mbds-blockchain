@@ -4,17 +4,12 @@ export default function Spinner({ label = 'Chargement…', center = true, size =
   const px = SIZE_MAP[size] ?? SIZE_MAP.md;
 
   const inner = (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: 'var(--text-dim)', fontSize: 12 }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8,
+                   color: 'var(--text-dim)', fontSize: 12 }}>
       <i className="ti ti-loader-2 spinning" style={{ fontSize: px }} />
       {label && <span>{label}</span>}
     </span>
   );
 
-  if (!center) return inner;
-
-  return (
-    <div className="loading">
-      {inner}
-    </div>
-  );
+  return center ? <div className="loading">{inner}</div> : inner;
 }

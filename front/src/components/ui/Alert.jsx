@@ -15,15 +15,8 @@ export default function Alert({ type = 'info', onClose, children }) {
         <button
           onClick={onClose}
           aria-label="Fermer"
-          style={{
-            marginLeft: 'auto',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '0 2px',
-            color: 'inherit',
-            opacity: 0.7,
-          }}
+          style={{ marginLeft: 'auto', background: 'none', border: 'none',
+                   cursor: 'pointer', padding: '0 2px', color: 'inherit', opacity: 0.7 }}
         >
           <i className="ti ti-x" />
         </button>
