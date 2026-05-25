@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev":       "vite",
-    "build":     "vite build",
-    "preview":   "vite preview",
-    "predeploy": "vite build",
-    "deploy":    "gh-pages -d dist",
+    "dev":       "vite front",
+    "build":     "vite build front",
+    "preview":   "vite preview front",
+    "predeploy": "vite build front",
+    "deploy":    "gh-pages -d front/dist",
     "test":      "hardhat test",
     "compile":   "hardhat compile"
   },
