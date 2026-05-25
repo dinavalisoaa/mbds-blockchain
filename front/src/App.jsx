@@ -2,15 +2,25 @@ import { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { connectWallet, disconnectWallet } from './services/wallet.js';
 import { checkContract } from './services/campaigns.js';
-import Navbar    from './components/Navbar.jsx';
-import Home      from './pages/Home.jsx';
-import Dashboard from './pages/Dashboard.jsx';
+import { useToast } from './context/ToastContext.jsx';
+import Navbar          from './components/Navbar.jsx';
+import ToastContainer  from './components/ToastContainer.jsx';
+import Home            from './pages/Home.jsx';
+import Dashboard       from './pages/Dashboard.jsx';
 
 export default function App() {
-  const [wallet,     setWallet]     = useState({ connected: false, address: null, network: null });
-  const [connecting, setConnecting] = useState(false);
-  const [connError,  setConnError]  = useState(null);
-  const [diagnostic, setDiagnostic] = useState(null);
+  const { add } = useToast();
+
+  const [wallet,         setWallet]         = useState({ connected: false, address: null, network: null });
+  const [connecting,     setConnecting]     = useState(false);
+  const [diagnostic,     setDiagnostic]     = useState(null);
+  const [theme,          setTheme]          = useState(() => localStorage.getItem('theme') ?? 'dark');
+  const [activeCategory, setActiveCategory] = useState(null);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('light', theme === 'light');
+    localStorage.setItem('theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     checkContract()
@@ -38,12 +48,11 @@ export default function App() {
 
   const handleConnect = async () => {
     setConnecting(true);
-    setConnError(null);
     try {
       const { address, network } = await connectWallet();
       setWallet({ connected: true, address, network });
     } catch (e) {
-      setConnError(e.reason || e.message);
+      add({ type: 'error', message: e.reason || e.message });
     } finally {
       setConnecting(false);
     }
@@ -52,7 +61,7 @@ export default function App() {
   const handleDisconnect = () => {
     disconnectWallet();
     setWallet({ connected: false, address: null, network: null });
-    setConnError(null);
+    setActiveCategory(null);
   };
 
   return (
@@ -61,15 +70,19 @@ export default function App() {
         <Navbar
           wallet={wallet}
           connecting={connecting}
-          connError={connError}
+          theme={theme}
+          onToggleTheme={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+          activeCategory={activeCategory}
+          onCategoryChange={setActiveCategory}
           onConnect={handleConnect}
           onDisconnect={handleDisconnect}
         />
         <Routes>
-          <Route path="/"          element={<Home      wallet={wallet} diagnostic={diagnostic} />} />
+          <Route path="/"          element={<Home      wallet={wallet} diagnostic={diagnostic} activeCategory={activeCategory} />} />
           <Route path="/dashboard" element={<Dashboard wallet={wallet} />} />
         </Routes>
       </div>
+      <ToastContainer />
     </HashRouter>
   );
 }

@@ -1,22 +1,20 @@
 import { useState, useRef } from 'react';
 import { txCreateCampaign } from '../services/transactions.js';
 import { uploadToPinata } from '../services/pinata.js';
+import { useTx } from '../hooks/useTx.js';
+import { CATEGORIES, TX_LABELS } from '../constants.js';
 import { Button, Alert, Card, Input } from './ui/index.js';
 
 const EMPTY = { title: '', desc: '', category: '0', goal: '', deadline: '' };
 
-const CATEGORIES = [
-  'Technologie', 'Art', 'Social', 'Environnement',
-  'Éducation', 'Musique', 'Film', 'Jeux', 'Alimentation', 'Autre',
-];
-
 const todayISO = () => new Date().toISOString().split('T')[0];
 
 export default function CreateForm({ wallet, onCreated }) {
+  const runTx = useTx();
   const [fields,    setFields]    = useState(EMPTY);
   const [imageFile, setImageFile] = useState(null);
   const [preview,   setPreview]   = useState(null);
-  const [status,    setStatus]    = useState(null);
+  const [ipfsMsg,   setIpfsMsg]   = useState(null);
   const [loading,   setLoading]   = useState(false);
   const fileRef = useRef();
 
@@ -30,27 +28,27 @@ export default function CreateForm({ wallet, onCreated }) {
   };
 
   const handleSubmit = async () => {
-    if (!wallet.connected) {
-      setStatus({ type: 'error', msg: "Connectez MetaMask d'abord" });
-      return;
-    }
+    if (!wallet.connected) return;
     setLoading(true);
+    setIpfsMsg(null);
     try {
       let cid = '';
       if (imageFile) {
-        setStatus({ type: 'info', msg: 'Upload image sur IPFS…' });
+        setIpfsMsg('Upload image sur IPFS…');
         cid = await uploadToPinata(imageFile);
+        setIpfsMsg(null);
       }
-      setStatus({ type: 'info', msg: 'En attente de confirmation MetaMask…' });
-      await txCreateCampaign(fields.title, fields.desc, cid, fields.category, fields.goal, fields.deadline);
-      setStatus({ type: 'success', msg: 'Campagne créée avec succès !' });
+      await runTx(
+        () => txCreateCampaign(fields.title, fields.desc, cid, fields.category, fields.goal, fields.deadline),
+        TX_LABELS.createCampaign
+      );
       setFields(EMPTY);
       setImageFile(null);
       setPreview(null);
       if (fileRef.current) fileRef.current.value = '';
       await onCreated();
-    } catch (e) {
-      setStatus({ type: 'error', msg: e.reason || e.message });
+    } catch {
+      /* toast affiche l'erreur */
     } finally {
       setLoading(false);
     }
@@ -98,10 +96,11 @@ export default function CreateForm({ wallet, onCreated }) {
         </div>
       </div>
 
-      <Alert type={status?.type} onClose={() => setStatus(null)}>{status?.msg}</Alert>
+      {ipfsMsg && <Alert type="info">{ipfsMsg}</Alert>}
 
-      <Button variant="primary" block icon="ti-rocket" loading={loading} onClick={handleSubmit}>
-        {loading ? 'Traitement…' : 'Créer la campagne'}
+      <Button variant="primary" block icon="ti-rocket" loading={loading} onClick={handleSubmit}
+        disabled={!wallet.connected}>
+        {wallet.connected ? 'Créer la campagne' : 'Connectez MetaMask pour créer'}
       </Button>
     </Card>
   );

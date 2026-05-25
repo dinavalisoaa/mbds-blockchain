@@ -2,22 +2,19 @@ import { useState, useEffect, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
 import { fetchAllCampaigns } from '../services/campaigns.js';
 import { txWithdraw, txRefund, txCancelCampaign } from '../services/transactions.js';
+import { useTx } from '../hooks/useTx.js';
+import { CATEGORIES, TX_LABELS } from '../constants.js';
 import { Button, Badge, Alert, ProgressBar, Spinner, EmptyState, Card } from '../components/ui/index.js';
 
-const CATEGORY_LABELS = [
-  'Technologie', 'Art', 'Social', 'Environnement',
-  'Éducation', 'Musique', 'Film', 'Jeux', 'Alimentation', 'Autre',
-];
-
 function MyCampaignRow({ campaign: c, onAction }) {
+  const runTx = useTx();
   const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState(null);
 
-  const run = async (fn) => {
-    setLoading(true); setError(null);
-    try { await fn(); await onAction(); }
-    catch (e) { setError(e.reason || e.message); }
-    finally   { setLoading(false); }
+  const run = async (fn, labels) => {
+    setLoading(true);
+    try { await runTx(fn, labels); await onAction(); }
+    catch { /* toast affiche l'erreur */ }
+    finally { setLoading(false); }
   };
 
   return (
@@ -28,12 +25,11 @@ function MyCampaignRow({ campaign: c, onAction }) {
           <span>{c.amountRaisedEth} / {c.goalEth} ETH</span>
           <span>· {c.progress}%</span>
           <span>· {c.timeLeft}</span>
-          {c.category !== undefined && <span>· {CATEGORY_LABELS[c.category] ?? '—'}</span>}
+          {c.category !== undefined && <span>· {CATEGORIES[c.category] ?? '—'}</span>}
         </div>
         <div style={{ marginTop: 6 }}>
           <ProgressBar percent={c.progress} status={c.status} showLabels={false} />
         </div>
-        <Alert type="error" onClose={() => setError(null)}>{error}</Alert>
       </div>
 
       <div className="dash-row-badge"><Badge status={c.status} /></div>
@@ -41,13 +37,13 @@ function MyCampaignRow({ campaign: c, onAction }) {
       <div className="dash-row-actions">
         {c.status === 'success' && !c.withdrawn && (
           <Button variant="primary" size="sm" icon="ti-download" loading={loading}
-            onClick={() => run(() => txWithdraw(c.id))}>
+            onClick={() => run(() => txWithdraw(c.id), TX_LABELS.withdraw)}>
             Retirer {c.amountRaisedEth} ETH
           </Button>
         )}
         {c.status === 'active' && c.amountRaised === 0n && (
           <Button variant="danger" size="sm" icon="ti-x" loading={loading}
-            onClick={() => run(() => txCancelCampaign(c.id))}>
+            onClick={() => run(() => txCancelCampaign(c.id), TX_LABELS.cancelCampaign)}>
             Annuler
           </Button>
         )}
@@ -60,14 +56,14 @@ function MyCampaignRow({ campaign: c, onAction }) {
 }
 
 function MyContribRow({ campaign: c, onAction }) {
+  const runTx = useTx();
   const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState(null);
 
-  const run = async (fn) => {
-    setLoading(true); setError(null);
-    try { await fn(); await onAction(); }
-    catch (e) { setError(e.reason || e.message); }
-    finally   { setLoading(false); }
+  const run = async (fn, labels) => {
+    setLoading(true);
+    try { await runTx(fn, labels); await onAction(); }
+    catch { /* toast affiche l'erreur */ }
+    finally { setLoading(false); }
   };
 
   return (
@@ -78,7 +74,6 @@ function MyContribRow({ campaign: c, onAction }) {
           <span><i className="ti ti-coin" /> Ma contribution : <strong>{c.myContribEth} ETH</strong></span>
           <span>· Objectif : {c.goalEth} ETH</span>
         </div>
-        <Alert type="error" onClose={() => setError(null)}>{error}</Alert>
       </div>
 
       <div className="dash-row-badge"><Badge status={c.status} /></div>
@@ -86,7 +81,7 @@ function MyContribRow({ campaign: c, onAction }) {
       <div className="dash-row-actions">
         {c.status === 'failed' && c.myContrib > 0n && (
           <Button variant="ghost" size="sm" icon="ti-receipt-refund" loading={loading}
-            onClick={() => run(() => txRefund(c.id))}>
+            onClick={() => run(() => txRefund(c.id), TX_LABELS.refund)}>
             Récupérer {c.myContribEth} ETH
           </Button>
         )}
@@ -117,9 +112,8 @@ export default function Dashboard({ wallet }) {
   const [campaigns, setCampaigns] = useState([]);
   const [loading,   setLoading]   = useState(true);
 
-  if (!wallet.connected) return <Navigate to="/" replace />;
-
   const load = useCallback(async () => {
+    if (!wallet.address) return;
     setLoading(true);
     try { setCampaigns(await fetchAllCampaigns(wallet.address)); }
     catch (e) { console.error(e); }
@@ -127,6 +121,8 @@ export default function Dashboard({ wallet }) {
   }, [wallet.address]);
 
   useEffect(() => { load(); }, [wallet.address]);
+
+  if (!wallet.connected) return <Navigate to="/" replace />;
 
   const addr = wallet.address?.toLowerCase();
 
