@@ -198,8 +198,8 @@ contract Crowdfunding is ReentrancyGuard {
     ) external nonReentrant campaignExists(id) onlyCreator(id) {
         Campaign storage c = campaigns[id];
 
-        require(c.amountRaised >= c.goal, "L'objectif n'est pas encore atteint");
         require(!c.withdrawn,             "Les fonds ont deja ete retires");
+        require(c.amountRaised >= c.goal, "L'objectif n'est pas encore atteint");
 
         uint256 amount = c.amountRaised;
 
