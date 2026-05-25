@@ -77,6 +77,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .btn-disconnect { color: var(--red); }
 .btn-block      { width: 100%; justify-content: center; padding: 9px 14px; margin-top: 10px; }
+.btn-sm         { padding: 5px 10px; font-size: 11px; }
 
 /* ── Inputs ─────────────────────────────────────────────── */
 input[type="text"], input[type="number"], input[type="date"] {
@@ -102,7 +103,7 @@ label      { font-size: 10px; color: var(--text-muted); display: block; margin-b
 .required  { color: var(--red); }
 
 /* ── Status ─────────────────────────────────────────────── */
-.status-msg { font-size: 12px; padding: 9px 12px; border-radius: var(--radius-xs); margin-bottom: 10px; border: 1px solid transparent; }
+.status-msg { font-size: 12px; padding: 9px 12px; border-radius: var(--radius-xs); margin-bottom: 10px; border: 1px solid transparent; display: flex; align-items: center; gap: 6px; }
 .status-msg.info    { background: var(--blue-dim);  color: var(--blue);  border-color: var(--blue-border);  }
 .status-msg.success { background: var(--green-dim); color: var(--green); border-color: var(--green-border); }
 .status-msg.error   { background: var(--red-dim);   color: var(--red);   border-color: var(--red-border);   }
