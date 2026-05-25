@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { txContribute, txWithdraw, txRefund, txCancelCampaign } from '../services/transactions.js';
 import { ipfsUrl } from '../services/pinata.js';
-
-const BADGE = { active: 'En cours', success: 'Succès', failed: 'Échoué', cancelled: 'Annulée' };
+import { Button, Badge, Alert, ProgressBar, Input } from './ui/index.js';
 
 export default function CampaignCard({ campaign: c, wallet, onAction }) {
   const [amount,  setAmount]  = useState('');
@@ -39,7 +38,7 @@ export default function CampaignCard({ campaign: c, wallet, onAction }) {
 
       <div className="campaign-top">
         <span className="campaign-title">{c.title}</span>
-        <span className={`badge ${c.status}`}>{BADGE[c.status]}</span>
+        <Badge status={c.status} />
       </div>
 
       {c.description && <p className="campaign-desc">{c.description}</p>}
@@ -49,13 +48,12 @@ export default function CampaignCard({ campaign: c, wallet, onAction }) {
         <span><i className="ti ti-clock" /> {c.timeLeft}</span>
       </div>
 
-      <div className="progress-bar">
-        <div className={`progress-fill ${c.status}`} style={{ width: `${c.progress}%` }} />
-      </div>
-      <div className="progress-labels">
-        <span>{c.amountRaisedEth} ETH levés</span>
-        <span>{c.progress}% · objectif {c.goalEth} ETH</span>
-      </div>
+      <ProgressBar
+        value={c.amountRaisedEth}
+        goal={c.goalEth}
+        percent={c.progress}
+        status={c.status}
+      />
 
       {c.myContrib > 0n && (
         <p className="my-contrib">
@@ -63,38 +61,48 @@ export default function CampaignCard({ campaign: c, wallet, onAction }) {
         </p>
       )}
 
-      {error && <p className="status-msg error">{error}</p>}
+      <Alert type="error" onClose={() => setError(null)}>{error}</Alert>
 
       {c.status === 'active' && (
         <div className="contrib-row">
-          <input type="number" min="0.001" step="0.001" placeholder="Montant ETH"
-            value={amount} onChange={e => setAmount(e.target.value)} />
-          <button className="btn-primary" disabled={loading}
-            onClick={() => run(() => txContribute(c.id, amount))}>
-            <i className="ti ti-heart" /> Contribuer
-          </button>
+          <Input
+            type="number"
+            min="0.001"
+            step="0.001"
+            placeholder="Montant ETH"
+            value={amount}
+            onChange={e => setAmount(e.target.value)}
+          />
+          <Button
+            variant="primary"
+            icon="ti-heart"
+            loading={loading}
+            onClick={() => run(() => txContribute(c.id, amount))}
+          >
+            Contribuer
+          </Button>
         </div>
       )}
 
       {c.status === 'active' && isCreator && c.amountRaised === 0n && (
-        <button className="btn-danger btn-block" disabled={loading}
+        <Button variant="danger" icon="ti-x" block loading={loading}
           onClick={() => run(() => txCancelCampaign(c.id))}>
-          <i className="ti ti-x" /> Annuler la campagne
-        </button>
+          Annuler la campagne
+        </Button>
       )}
 
       {c.status === 'success' && isCreator && !c.withdrawn && (
-        <button className="btn-primary btn-block" disabled={loading}
+        <Button variant="primary" icon="ti-download" block loading={loading}
           onClick={() => run(() => txWithdraw(c.id))}>
-          <i className="ti ti-download" /> Retirer {c.amountRaisedEth} ETH
-        </button>
+          Retirer {c.amountRaisedEth} ETH
+        </Button>
       )}
 
       {c.status === 'failed' && c.myContrib > 0n && (
-        <button className="btn-ghost btn-block" disabled={loading}
+        <Button variant="ghost" icon="ti-receipt-refund" block loading={loading}
           onClick={() => run(() => txRefund(c.id))}>
-          <i className="ti ti-receipt-refund" /> Récupérer mon remboursement {c.myContribEth} ETH
-        </button>
+          Récupérer {c.myContribEth} ETH
+        </Button>
       )}
     </article>
   );

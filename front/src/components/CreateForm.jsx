@@ -1,28 +1,21 @@
 import { useState, useRef } from 'react';
 import { txCreateCampaign } from '../services/transactions.js';
-import { uploadToPinata, ipfsUrl } from '../services/pinata.js';
+import { uploadToPinata } from '../services/pinata.js';
+import { Button, Alert, Card, Input } from './ui/index.js';
 
 const EMPTY = { title: '', desc: '', category: '0', goal: '', deadline: '' };
 
 const CATEGORIES = [
-  'Technologie',
-  'Art',
-  'Social',
-  'Environnement',
-  'Éducation',
-  'Musique',
-  'Film',
-  'Jeux',
-  'Alimentation',
-  'Autre',
+  'Technologie', 'Art', 'Social', 'Environnement',
+  'Éducation', 'Musique', 'Film', 'Jeux', 'Alimentation', 'Autre',
 ];
 
 const todayISO = () => new Date().toISOString().split('T')[0];
 
 export default function CreateForm({ wallet, onCreated }) {
   const [fields,    setFields]    = useState(EMPTY);
-  const [imageFile, setImageFile] = useState(null);   // File object
-  const [preview,   setPreview]   = useState(null);   // local object URL
+  const [imageFile, setImageFile] = useState(null);
+  const [preview,   setPreview]   = useState(null);
   const [status,    setStatus]    = useState(null);   // { type, msg }
   const [loading,   setLoading]   = useState(false);
   const fileRef = useRef();
@@ -43,24 +36,16 @@ export default function CreateForm({ wallet, onCreated }) {
     }
     setLoading(true);
     try {
-      // 1. Upload image → Pinata (optionnel)
       let cid = '';
       if (imageFile) {
         setStatus({ type: 'info', msg: 'Upload image sur IPFS…' });
         cid = await uploadToPinata(imageFile);
       }
-
-      // 2. Envoyer la tx
       setStatus({ type: 'info', msg: 'En attente de confirmation MetaMask…' });
       await txCreateCampaign(
-        fields.title,
-        fields.desc,
-        cid,
-        fields.category,
-        fields.goal,
-        fields.deadline,
+        fields.title, fields.desc, cid,
+        fields.category, fields.goal, fields.deadline,
       );
-
       setStatus({ type: 'success', msg: 'Campagne créée avec succès !' });
       setFields(EMPTY);
       setImageFile(null);
@@ -75,69 +60,78 @@ export default function CreateForm({ wallet, onCreated }) {
   };
 
   return (
-    <section className="card form-create">
-      <p className="card-title">
-        <i className="ti ti-rocket" /> Créer une campagne
-      </p>
-
+    <Card title="Créer une campagne" icon="ti-rocket" className="form-create">
       <div className="form-grid">
+
         <div className="col-full">
-          <label>Titre <span className="required">*</span></label>
-          <input type="text" placeholder="Ex : Station météo pour le village"
-            value={fields.title} onChange={set('title')} />
+          <Input
+            label="Titre" required
+            type="text"
+            placeholder="Ex : Station météo pour le village"
+            value={fields.title}
+            onChange={set('title')}
+          />
         </div>
 
         <div className="col-full">
-          <label>Description</label>
-          <input type="text" placeholder="Courte description du projet"
-            value={fields.desc} onChange={set('desc')} />
+          <Input
+            label="Description"
+            type="text"
+            placeholder="Courte description du projet"
+            value={fields.desc}
+            onChange={set('desc')}
+          />
         </div>
 
-        {/* ── Image upload ── */}
         <div className="col-full">
           <label>Image de campagne</label>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFile}
-          />
+          <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} />
           {preview && (
-            <img
-              src={preview}
-              alt="preview"
-              style={{ marginTop: '0.5rem', maxHeight: 160, borderRadius: 8, objectFit: 'cover' }}
-            />
+            <img src={preview} alt="preview"
+              style={{ marginTop: '0.5rem', maxHeight: 160, borderRadius: 8, objectFit: 'cover' }} />
           )}
         </div>
 
         <div>
           <label>Catégorie</label>
           <select value={fields.category} onChange={set('category')}>
-            {CATEGORIES.map((c, i) => (
-              <option key={i} value={i}>{c}</option>
+            {CATEGORIES.map((cat, i) => (
+              <option key={i} value={i}>{cat}</option>
             ))}
           </select>
         </div>
 
         <div>
-          <label>Objectif (ETH) <span className="required">*</span></label>
-          <input type="number" min="0.01" step="0.01" placeholder="0.5"
-            value={fields.goal} onChange={set('goal')} />
+          <Input
+            label="Objectif (ETH)" required
+            type="number" min="0.01" step="0.01" placeholder="0.5"
+            value={fields.goal}
+            onChange={set('goal')}
+          />
         </div>
 
         <div>
-          <label>Date de fin <span className="required">*</span></label>
-          <input type="date" min={todayISO()}
-            value={fields.deadline} onChange={set('deadline')} />
+          <Input
+            label="Date de fin" required
+            type="date" min={todayISO()}
+            value={fields.deadline}
+            onChange={set('deadline')}
+          />
         </div>
       </div>
 
-      {status && <p className={`status-msg ${status.type}`}>{status.msg}</p>}
+      <Alert type={status?.type} onClose={() => setStatus(null)}>
+        {status?.msg}
+      </Alert>
 
-      <button className="btn-primary btn-block" onClick={handleSubmit} disabled={loading}>
-        <i className="ti ti-rocket" /> {loading ? 'Traitement…' : 'Créer la campagne'}
-      </button>
-    </section>
+      <Button
+        variant="primary" block
+        icon="ti-rocket"
+        loading={loading}
+        onClick={handleSubmit}
+      >
+        {loading ? 'Traitement…' : 'Créer la campagne'}
+      </Button>
+    </Card>
   );
 }

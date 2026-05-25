@@ -80,13 +80,14 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn-sm         { padding: 5px 10px; font-size: 11px; }
 
 /* ── Inputs ─────────────────────────────────────────────── */
-input[type="text"], input[type="number"], input[type="date"] {
+input[type="text"], input[type="number"], input[type="date"], select {
   background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm);
   color: var(--text); font-family: inherit; font-size: 13px; padding: 8px 11px;
   width: 100%; outline: none; transition: border-color 0.15s;
 }
-input:focus        { border-color: var(--green); }
-input::placeholder { color: var(--text-dim); }
+input:focus, select:focus { border-color: var(--green); }
+input::placeholder        { color: var(--text-dim); }
+select                    { cursor: pointer; }
 input[type="number"]              { -moz-appearance: textfield; }
 input::-webkit-inner-spin-button  { display: none; }
 input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }

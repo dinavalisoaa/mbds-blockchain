@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button, Alert } from './ui/index.js';
 
 export default function WalletBar({ wallet, onConnect, onDisconnect }) {
   const [connecting, setConnecting] = useState(false);
@@ -25,16 +26,26 @@ export default function WalletBar({ wallet, onConnect, onDisconnect }) {
           <p className="network-tag">Sepolia Testnet</p>
           <h1>Crowdfunding on-chain</h1>
         </div>
+
         <div className="header-actions">
           {wallet.connected ? (
-            <button className="btn-ghost btn-disconnect" onClick={onDisconnect}>
-              <i className="ti ti-plug-x" /> Déconnecter
-            </button>
+            <Button
+              variant="ghost"
+              icon="ti-plug-x"
+              className="btn-disconnect"
+              onClick={onDisconnect}
+            >
+              Déconnecter
+            </Button>
           ) : (
-            <button className="btn-primary" onClick={handleConnect} disabled={connecting}>
-              <i className="ti ti-wallet" />
-              {connecting ? 'Connexion…' : 'Connecter MetaMask'}
-            </button>
+            <Button
+              variant="primary"
+              icon="ti-wallet"
+              loading={connecting}
+              onClick={handleConnect}
+            >
+              Connecter MetaMask
+            </Button>
           )}
         </div>
       </header>
@@ -47,7 +58,7 @@ export default function WalletBar({ wallet, onConnect, onDisconnect }) {
         </div>
       )}
 
-      {error && <p className="status-msg error">{error}</p>}
+      <Alert type="error" onClose={() => setError(null)}>{error}</Alert>
     </>
   );
 }

@@ -5,17 +5,17 @@ import { txRefundAll } from './services/transactions.js';
 import WalletBar    from './components/WalletBar.jsx';
 import CreateForm   from './components/CreateForm.jsx';
 import CampaignCard from './components/CampaignCard.jsx';
+import { Alert, Spinner, EmptyState, Button } from './components/ui/index.js';
 
 export default function App() {
-  const [wallet,     setWallet]     = useState({ connected: false, address: null, network: null });
-  const [campaigns,  setCampaigns]  = useState([]);
-  const [loading,    setLoading]    = useState(false);
-  const [diagnostic, setDiagnostic] = useState(null);
+  const [wallet,        setWallet]        = useState({ connected: false, address: null, network: null });
+  const [campaigns,     setCampaigns]     = useState([]);
+  const [loading,       setLoading]       = useState(false);
+  const [diagnostic,    setDiagnostic]    = useState(null);
   const [autoRefundMsg, setAutoRefundMsg] = useState(null); // { type, msg }
-  // Track which campaign IDs we already attempted refundAll for (avoid re-firing on reload)
   const refundedIds = useRef(new Set());
 
-  // Verify contract on-chain at startup (no wallet needed)
+  // Vérification du contrat au démarrage (sans wallet)
   useEffect(() => {
     checkContract()
       .then(({ exists, count }) => setDiagnostic(
@@ -26,6 +26,7 @@ export default function App() {
       .catch(e => setDiagnostic({ ok: false, msg: `Erreur RPC : ${e.message}` }));
   }, []);
 
+  // Chargement des campagnes
   const loadCampaigns = useCallback(async (addr = wallet.address) => {
     if (!addr) return;
     setLoading(true);
@@ -39,7 +40,7 @@ export default function App() {
     else setCampaigns([]);
   }, [wallet.connected]);
 
-  // Auto-refundAll: when creator connects, refund all failed campaigns automatically
+  // Auto-refundAll: rembourse les campagnes échouées du créateur
   useEffect(() => {
     if (!wallet.connected || campaigns.length === 0) return;
 
@@ -53,35 +54,26 @@ export default function App() {
 
     if (toRefund.length === 0) return;
 
-    // Mark as attempted immediately to prevent double-fire
     toRefund.forEach(c => refundedIds.current.add(c.id));
-
     setAutoRefundMsg({ type: 'info', msg: `Remboursement automatique en cours pour ${toRefund.length} campagne(s)…` });
 
     (async () => {
-      let ok = 0;
-      let fail = 0;
+      let ok = 0; let fail = 0;
       for (const c of toRefund) {
-        try {
-          await txRefundAll(c.id);
-          ok++;
-        } catch (e) {
-          fail++;
-          console.error(`refundAll(${c.id}) failed:`, e.message);
-        }
+        try { await txRefundAll(c.id); ok++; }
+        catch (e) { fail++; console.error(`refundAll(${c.id}) failed:`, e.message); }
       }
-      if (fail === 0) {
-        setAutoRefundMsg({ type: 'success', msg: `✓ ${ok} campagne(s) remboursée(s) automatiquement.` });
-      } else {
-        setAutoRefundMsg({ type: 'error', msg: `${ok} réussie(s), ${fail} échouée(s) — vérifiez MetaMask.` });
-      }
-      // Reload to reflect new withdrawn state
+      setAutoRefundMsg(
+        fail === 0
+          ? { type: 'success', msg: `✓ ${ok} campagne(s) remboursée(s) automatiquement.` }
+          : { type: 'error',   msg: `${ok} réussie(s), ${fail} échouée(s) — vérifiez MetaMask.` }
+      );
       await loadCampaigns();
       setTimeout(() => setAutoRefundMsg(null), 6000);
     })();
   }, [campaigns, wallet.connected, wallet.address]);
 
-  // Reset on MetaMask account/network change
+  // Reset sur changement de compte / réseau MetaMask
   useEffect(() => {
     if (!window.ethereum) return;
     const reset = () => {
@@ -96,6 +88,7 @@ export default function App() {
     };
   }, []);
 
+  // Handlers
   const handleConnect = async () => {
     const { address, network } = await connectWallet();
     setWallet({ connected: true, address, network });
@@ -110,20 +103,24 @@ export default function App() {
     setAutoRefundMsg(null);
   };
 
+  // Rendu de la liste
   const renderList = () => {
     if (loading)
-      return <div className="loading">Chargement…</div>;
+      return <Spinner label="Chargement des campagnes…" />;
 
     if (!wallet.connected)
       return diagnostic
-        ? <div className={`diagnostic ${diagnostic.ok ? 'ok' : 'err'}`}>
-            <i className={`ti ti-${diagnostic.ok ? 'circle-check' : 'alert-circle'}`} />
-            {' '}{diagnostic.msg}
-          </div>
-        : <div className="empty-state">Connectez MetaMask pour voir les campagnes.</div>;
+        ? <Alert type={diagnostic.ok ? 'success' : 'error'}>{diagnostic.msg}</Alert>
+        : <EmptyState title="Connectez MetaMask pour voir les campagnes." />;
 
     if (campaigns.length === 0)
-      return <div className="empty-state">Aucune campagne — créez la première !</div>;
+      return (
+        <EmptyState
+          icon="ti-rocket"
+          title="Aucune campagne"
+          subtitle="Créez la première via le formulaire ci-dessus !"
+        />
+      );
 
     return campaigns.map(c => (
       <CampaignCard key={c.id} campaign={c} wallet={wallet} onAction={loadCampaigns} />
@@ -135,18 +132,25 @@ export default function App() {
       <WalletBar wallet={wallet} onConnect={handleConnect} onDisconnect={handleDisconnect} />
       <CreateForm wallet={wallet} onCreated={loadCampaigns} />
 
+      {/* En-tête de section */}
       <div className="section-header">
         <span className="section-title">Campagnes</span>
-        <button className="btn-ghost" onClick={() => loadCampaigns()}
-          disabled={loading || !wallet.connected}>
-          <i className={`ti ti-refresh ${loading ? 'spinning' : ''}`} /> Actualiser
-        </button>
+        <Button
+          variant="ghost"
+          icon="ti-refresh"
+          loading={loading}
+          disabled={!wallet.connected}
+          onClick={() => loadCampaigns()}
+        >
+          Actualiser
+        </Button>
       </div>
 
+      {/* Message remboursement automatique */}
       {autoRefundMsg && (
-        <p className={`status-msg ${autoRefundMsg.type}`} style={{ margin: '0.5rem 0' }}>
-          <i className="ti ti-refresh" /> {autoRefundMsg.msg}
-        </p>
+        <Alert type={autoRefundMsg.type} onClose={() => setAutoRefundMsg(null)}>
+          {autoRefundMsg.msg}
+        </Alert>
       )}
 
       <div id="campaigns-list">{renderList()}</div>
