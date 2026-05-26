@@ -24,6 +24,9 @@ export default function Navbar({ wallet, connecting, theme, onToggleTheme, activ
             <NavLink to="/dashboard" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
               <i className="ti ti-layout-dashboard" /> Dashboard
             </NavLink>
+            <NavLink to="/create" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+              <i className="ti ti-plus" /> Créer une campagne
+            </NavLink>
           </div>
         )}
 

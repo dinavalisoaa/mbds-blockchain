@@ -7,6 +7,7 @@ import Navbar          from './components/Navbar.jsx';
 import ToastContainer  from './components/ToastContainer.jsx';
 import Home            from './pages/Home.jsx';
 import Dashboard       from './pages/Dashboard.jsx';
+import CreateCampaignPage from './pages/CreateCampaignPage.jsx';
 
 export default function App() {
   const { add } = useToast();
@@ -78,8 +79,9 @@ export default function App() {
           onDisconnect={handleDisconnect}
         />
         <Routes>
-          <Route path="/"          element={<Home      wallet={wallet} diagnostic={diagnostic} activeCategory={activeCategory} />} />
+          <Route path="/create"    element={<CreateCampaignPage wallet={wallet} />} />
           <Route path="/dashboard" element={<Dashboard wallet={wallet} />} />
+          <Route path="/"          element={<Home      wallet={wallet} diagnostic={diagnostic} activeCategory={activeCategory} />} />
         </Routes>
       </div>
       <ToastContainer />
