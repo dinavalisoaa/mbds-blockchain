@@ -6,52 +6,78 @@ import { useCountdown } from '../hooks/useCountdown.js';
 import { ipfsUrl } from '../services/pinata.js';
 import { useTx } from '../hooks/useTx.js';
 import { CATEGORIES, TX_LABELS } from '../constants.js';
-import { Badge, ProgressBar, Spinner, EmptyState, Card } from '../components/ui/index.js';
+import { Badge, Spinner, EmptyState } from '../components/ui/index.js';
 
-// ── Countdown widget ─────────────────────────────────────────
-function Countdown({ deadline, status }) {
-  const { display, isUrgent, done } = useCountdown(deadline);
-  if (status !== 'active') return null;
+// ── Helpers ───────────────────────────────────────────────
+function timeAgo(ts) {
+  const diff = Math.floor(Date.now() / 1000) - Number(ts);
+  if (diff < 60)    return `${diff}S_AGO`;
+  if (diff < 3600)  return `${Math.floor(diff / 60)}M_AGO`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}H_AGO`;
+  return `${Math.floor(diff / 86400)}D_AGO`;
+}
+
+const SEGMENTS = 20;
+function SegmentedBar({ percent, status }) {
+  const filled = Math.round((Math.min(percent, 100) / 100) * SEGMENTS);
+  const color = status === 'failed' ? 'var(--red)' : 'var(--green)';
   return (
-    <div className={`countdown${isUrgent ? ' urgent' : ''}`}>
-      <span className="countdown-label"><i className="ti ti-clock" /> TIME_REMAINING</span>
-      <span className="countdown-value">{done ? 'EXPIRED' : display}</span>
+    <div className="seg-bar">
+      {Array.from({ length: SEGMENTS }).map((_, i) => (
+        <div
+          key={i}
+          className="seg-bar-block"
+          style={{ background: i < filled ? color : 'var(--surface-3)' }}
+        />
+      ))}
     </div>
   );
 }
 
-// ── Transaction row ──────────────────────────────────────────
+// ── Countdown ─────────────────────────────────────────────
+function Countdown({ deadline, status }) {
+  const { display, isUrgent, done } = useCountdown(deadline);
+  if (status !== 'active') return (
+    <div className="fiche-countdown fiche-countdown--dim">
+      <span className="fiche-countdown-label">URGENCY_COUNTDOWN</span>
+      <span className="fiche-countdown-val">--:--:--:--</span>
+    </div>
+  );
+  return (
+    <div className={`fiche-countdown${isUrgent ? ' fiche-countdown--urgent' : ''}`}>
+      <span className="fiche-countdown-label">URGENCY_COUNTDOWN</span>
+      <span className="fiche-countdown-val">{done ? 'EXPIRED' : display}</span>
+    </div>
+  );
+}
+
+// ── TX row ────────────────────────────────────────────────
 const TX_CONFIG = {
-  contribution:  { icon: 'ti-heart',         label: 'CONTRIBUTION',  color: 'var(--green)',      sign: '+' },
-  withdrawal:    { icon: 'ti-download',       label: 'WITHDRAWAL',    color: 'var(--blue)',       sign: '' },
-  refund:        { icon: 'ti-receipt-refund', label: 'REFUND',        color: 'var(--text-muted)', sign: '' },
-  excess_refund: { icon: 'ti-refresh',        label: 'EXCESS_REFUND', color: 'var(--text-dim)',   sign: '' },
-  cancelled:     { icon: 'ti-x',             label: 'CANCELLED',     color: 'var(--red)',        sign: '' },
+  contribution:  { label: 'CONTRIBUTION',  color: 'var(--green)',      sign: '+' },
+  withdrawal:    { label: 'WITHDRAWAL',    color: 'var(--red)',        sign: '-' },
+  refund:        { label: 'REFUND',        color: 'var(--text-muted)', sign: ''  },
+  excess_refund: { label: 'EXCESS_REFUND', color: 'var(--text-dim)',   sign: ''  },
+  cancelled:     { label: 'CANCELLED',     color: 'var(--red)',        sign: ''  },
 };
 
 function TxRow({ event: e }) {
   const cfg = TX_CONFIG[e.type] ?? TX_CONFIG.contribution;
-  const date = new Date(e.timestamp * 1000).toLocaleDateString('en-US', {
-    day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
-  const short = a => `${a.slice(0, 6)}…${a.slice(-4)}`;
-
+  const short = a => `${a.slice(0, 6)}...${a.slice(-4)}`;
   return (
-    <div className="tx-row">
-      <span className="tx-type" style={{ color: cfg.color }}>
-        <i className={`ti ${cfg.icon}`} /> {cfg.label}
+    <div className="fiche-tx-row">
+      <span className="fiche-tx-type">
+        <span className="fiche-tx-dot" style={{ background: cfg.color }} />
+        {cfg.label}
       </span>
-      <span className="tx-actor">{short(e.actor)}</span>
-      <span className="tx-amount" style={{ color: cfg.color }}>
-        {e.amountEth ? `${cfg.sign}${e.amountEth} ETH` : '—'}
+      <span className="fiche-tx-addr">{short(e.actor)}</span>
+      <span className="fiche-tx-amount" style={{ color: cfg.color }}>
+        {e.amountEth ? `${cfg.sign}${e.amountEth}` : '—'}
       </span>
-      <span className="tx-date">{date}</span>
+      <span className="fiche-tx-time">{e.timestamp ? timeAgo(e.timestamp) : '—'}</span>
       <a
-        className="tx-hash"
+        className="fiche-tx-verify"
         href={`https://sepolia.etherscan.io/tx/${e.txHash}`}
         target="_blank" rel="noopener noreferrer"
-        title={e.txHash}
       >
         <i className="ti ti-external-link" />
       </a>
@@ -59,27 +85,25 @@ function TxRow({ event: e }) {
   );
 }
 
-// ── Page ─────────────────────────────────────────────────────
+// ── Page ──────────────────────────────────────────────────
 export default function CampaignDetail({ wallet }) {
   const { id } = useParams();
   const runTx = useTx();
 
-  const [campaign,      setCampaign]      = useState(null);
-  const [events,        setEvents]        = useState([]);
-  const [contributors,  setContributors]  = useState([]);
-  const [loading,       setLoading]       = useState(true);
-  const [eventsLoading, setEventsLoading] = useState(true);
+  const [campaign,        setCampaign]        = useState(null);
+  const [events,          setEvents]          = useState([]);
+  const [contributors,    setContributors]    = useState([]);
+  const [loading,         setLoading]         = useState(true);
+  const [eventsLoading,   setEventsLoading]   = useState(true);
   const [contribsLoading, setContribsLoading] = useState(true);
-  const [error,         setError]         = useState(null);
-  const [amount,        setAmount]        = useState('');
-  const [txLoading,     setTxLoading]     = useState(false);
-  const [copied,        setCopied]        = useState(false);
+  const [error,           setError]           = useState(null);
+  const [amount,          setAmount]          = useState('');
+  const [txLoading,       setTxLoading]       = useState(false);
+  const [copied,          setCopied]          = useState(false);
 
-  // Fetch campaign data
   useEffect(() => {
     let alive = true;
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     fetchCampaignById(id)
       .then(c  => { if (alive) setCampaign(c); })
       .catch(e => { if (alive) setError(e.message); })
@@ -87,7 +111,6 @@ export default function CampaignDetail({ wallet }) {
     return () => { alive = false; };
   }, [id]);
 
-  // Fetch event history
   useEffect(() => {
     if (!campaign) return;
     let alive = true;
@@ -99,7 +122,6 @@ export default function CampaignDetail({ wallet }) {
     return () => { alive = false; };
   }, [id, campaign]);
 
-  // Fetch contributors list
   useEffect(() => {
     if (!campaign) return;
     let alive = true;
@@ -113,13 +135,16 @@ export default function CampaignDetail({ wallet }) {
 
   const run = async (fn, labels) => {
     setTxLoading(true);
-    try { await runTx(fn, labels); const c = await fetchCampaignById(id); setCampaign(c); }
-    catch { /* toast shows error */ }
+    try {
+      await runTx(fn, labels);
+      const c = await fetchCampaignById(id);
+      setCampaign(c);
+    } catch { /* toast */ }
     finally { setTxLoading(false); }
   };
 
-  const handleCopy = url => {
-    navigator.clipboard.writeText(url);
+  const handleCopy = text => {
+    navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -134,317 +159,234 @@ export default function CampaignDetail({ wallet }) {
   if (error)   return (
     <div>
       {backLink}
-      <div style={{ marginTop: '1.5rem', color: 'var(--red)', fontSize: 12, letterSpacing: '0.04em' }}>
+      <div style={{ marginTop: '1.5rem', color: 'var(--red)', fontSize: 12 }}>
         <i className="ti ti-alert-circle" /> {error}
       </div>
     </div>
   );
 
   const c = campaign;
-  const imgUrl = ipfsUrl(c.imageIPFS);
-  const isCreator = wallet?.address?.toLowerCase() === c.creator.toLowerCase();
+  const imgUrl      = ipfsUrl(c.imageIPFS);
+  const isCreator   = wallet?.address?.toLowerCase() === c.creator.toLowerCase();
+  const etherscanCreator = `https://sepolia.etherscan.io/address/${c.creator}`;
 
   const dd = new Date(Number(c.createdAt) * 1000);
-  const createdDate = `${dd.getFullYear()}-${String(dd.getMonth() + 1).padStart(2, '0')}-${String(dd.getDate()).padStart(2, '0')}`;
-  const etherscanUrl = `https://sepolia.etherscan.io/address/${c.creator}`;
+  const createdDate = `${dd.getFullYear()}.${String(dd.getMonth()+1).padStart(2,'0')}.${String(dd.getDate()).padStart(2,'0')}`;
+
+  const statusLabel = c.status === 'active'    ? 'LIVE_ON_SEPOLIA'
+                    : c.status === 'success'   ? 'FUNDED'
+                    : c.status === 'failed'    ? 'FAILED'
+                    : 'CANCELLED';
+  const nodeLabel = `${c.status.toUpperCase()}_NODE_V1`;
 
   return (
     <div className="campaign-detail">
       {backLink}
 
-      {/* ── Two-column layout ── */}
-      <div className="detail-page">
+      {/* ── HERO ──────────────────────────────────────────── */}
+      <div className="fiche-hero">
 
-        {/* ── LEFT PANEL ── */}
-        <div className="detail-left">
-          {/* Header */}
-          <div className="detail-panel-header">
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
-              <h1 className="detail-panel-title">{c.title}</h1>
-              <Badge status={c.status} />
-            </div>
-            <p className="detail-panel-subtitle">
-              Deploy new crowdfunding smart contract on Sepolia Testnet.
-            </p>
-          </div>
-
-          {/* Description field */}
-          {c.description && (
-            <div className="detail-field col-full" style={{ marginBottom: '1rem' }}>
-              <span className="detail-field-label">MANIFESTO_DESCRIPTION</span>
-              <div className="detail-field-textarea">{c.description}</div>
-            </div>
-          )}
-
-          {/* Meta grid — category / created / creator / contributors */}
-          <div className="detail-field-grid">
-            <div className="detail-field">
-              <span className="detail-field-label">SECTOR_CLASSIFICATION</span>
-              <span className="detail-field-value">{CATEGORIES[c.category] ?? '—'}</span>
-            </div>
-            <div className="detail-field">
-              <span className="detail-field-label">DEPLOYMENT_DATE</span>
-              <span className="detail-field-value">{createdDate}</span>
-            </div>
-            <div className="detail-field">
-              <span className="detail-field-label">DEPLOYER_ADDRESS</span>
-              <span className="detail-field-value">{c.creatorShort}</span>
-            </div>
-            <div className="detail-field">
-              <span className="detail-field-label">CONTRIBUTORS</span>
-              <span className="detail-field-value">{c.contributorCount}</span>
-            </div>
-          </div>
-
-          {/* Goal + raised */}
-          <div className="detail-field-grid">
-            <div className="detail-field">
-              <span className="detail-field-label">TARGET_GOAL</span>
-              <div className="detail-field-value-row">
-                <span className="detail-field-value">{c.goalEth}</span>
-                <span className="detail-field-suffix">SEPOLIA_ETH</span>
+        {/* LEFT: image */}
+        <div className="fiche-hero-img-wrap">
+          {imgUrl
+            ? <img src={imgUrl} alt={c.title} className="fiche-hero-img"
+                onError={e => { e.target.style.display='none'; }} />
+            : <div className="fiche-hero-img-placeholder">
+                <i className="ti ti-photo-off" />
               </div>
+          }
+          <span className="fiche-node-badge">{nodeLabel}</span>
+        </div>
+
+        {/* RIGHT: status + funding + action */}
+        <div className="fiche-hero-panel">
+
+          {/* Status row */}
+          <div className="fiche-status-row">
+            <div className="fiche-status-left">
+              <span className="fiche-status-label">CURRENT_STATUS</span>
+              <span className="fiche-status-live">
+                <span className="fiche-live-dot" />
+                {statusLabel}
+              </span>
             </div>
-            <div className="detail-field">
-              <span className="detail-field-label">AMOUNT_RAISED</span>
-              <div className="detail-field-value-row">
-                <span className="detail-field-value teal">{c.amountRaisedEth}</span>
-                <span className="detail-field-suffix">{c.progress}% FUNDED</span>
-              </div>
+            <div className="fiche-status-right">
+              <span className="fiche-status-label">URGENCY_COUNTDOWN</span>
+              <CountdownVal deadline={c.deadline} status={c.status} />
             </div>
           </div>
 
-          {/* Progress bar */}
-          <div style={{ marginBottom: '1rem' }}>
-            <ProgressBar value={c.amountRaisedEth} goal={c.goalEth} percent={c.progress} status={c.status} showLabels={false} />
+          <div className="fiche-divider" />
+
+          {/* Funded */}
+          <div className="fiche-funded-label">TOTAL_FUNDED</div>
+          <div className="fiche-funded-row">
+            <span className="fiche-funded-val">{c.amountRaisedEth} <span className="fiche-funded-unit">ETH</span></span>
+            <span className="fiche-goal-label">GOAL: {c.goalEth} ETH</span>
           </div>
 
-          {/* Countdown */}
-          <Countdown deadline={c.deadline} status={c.status} />
+          {/* Segmented bar */}
+          <SegmentedBar percent={c.progress} status={c.status} />
 
-          {/* My contribution indicator */}
+          <div className="fiche-bar-meta">
+            <span className="fiche-pct" style={{ color: c.status === 'failed' ? 'var(--red)' : 'var(--green)' }}>
+              {c.progress}% COMPLETED
+            </span>
+            <span className="fiche-contrib-count">{c.contributorCount} CONTRIBUTORS</span>
+          </div>
+
+          <div className="fiche-divider" />
+
+          {/* My stake */}
           {c.myContrib > 0n && (
-            <div className="detail-my-contrib">
-              <i className="ti ti-circle-check" />
-              MY_CONTRIBUTION: <strong>{c.myContribEth} ETH</strong>
+            <div className="fiche-stake-box">
+              <i className="ti ti-info-circle" style={{ color: 'var(--green)', fontSize: 13 }} />
+              <span>YOUR_STAKE: <strong style={{ color: 'var(--green)' }}>{c.myContribEth} ETH</strong></span>
             </div>
           )}
 
-          {/* ── Action section ── */}
+          {/* Contribute */}
           {c.status === 'active' && wallet?.connected && (
-            <div className="detail-action-section">
-              <label>CONTRIBUTION_AMOUNT</label>
-              <div className="detail-contribute-row">
-                <div className="input-suffix-wrap">
+            <div className="fiche-contribute">
+              <label className="fiche-contribute-label">CONTRIBUTE_AMOUNT</label>
+              <div className="fiche-contribute-row">
+                <div className="input-suffix-wrap" style={{ flex: 1 }}>
                   <input
                     type="number" min="0.001" step="0.001" placeholder="0.00"
                     value={amount} onChange={e => setAmount(e.target.value)}
                   />
-                  <span className="input-suffix">SEPOLIA_ETH</span>
+                  <span className="input-suffix">ETH</span>
                 </div>
+                <button
+                  className="fiche-contribute-btn"
+                  disabled={txLoading || !amount}
+                  onClick={() => run(() => txContribute(c.id, amount), TX_LABELS.contribute)}
+                >
+                  {txLoading ? <i className="ti ti-loader-2 spinning" /> : null}
+                  CONTRIBUTE_ETH
+                </button>
               </div>
-              <button
-                className="detail-cta-btn"
-                disabled={txLoading || !amount}
-                onClick={() => run(() => txContribute(c.id, amount), TX_LABELS.contribute)}
-              >
-                {txLoading ? <i className="ti ti-loader-2 spinning" /> : <i className="ti ti-heart" />}
-                CONTRIBUTE_ETH
-              </button>
             </div>
           )}
 
           {c.status === 'active' && !wallet?.connected && (
-            <div className="detail-action-section">
-              <button className="detail-cta-btn" disabled>
-                CONNECT_WALLET_TO_CONTRIBUTE
-              </button>
-            </div>
+            <button className="detail-cta-btn" disabled style={{ marginTop: '1rem' }}>
+              CONNECT_WALLET_TO_CONTRIBUTE
+            </button>
           )}
 
           {c.status === 'success' && isCreator && !c.withdrawn && (
-            <div className="detail-action-section">
-              <button
-                className="detail-cta-btn"
-                disabled={txLoading}
-                onClick={() => run(() => txWithdraw(c.id), TX_LABELS.withdraw)}
-              >
-                {txLoading ? <i className="ti ti-loader-2 spinning" /> : <i className="ti ti-download" />}
-                WITHDRAW_FUNDS ({c.amountRaisedEth} ETH)
-              </button>
-            </div>
+            <button
+              className="detail-cta-btn" style={{ marginTop: '1rem' }}
+              disabled={txLoading}
+              onClick={() => run(() => txWithdraw(c.id), TX_LABELS.withdraw)}
+            >
+              {txLoading ? <i className="ti ti-loader-2 spinning" /> : <i className="ti ti-download" />}
+              WITHDRAW_FUNDS ({c.amountRaisedEth} ETH)
+            </button>
           )}
 
           {c.status === 'failed' && c.myContrib > 0n && (
-            <div className="detail-action-section">
-              <button
-                className="detail-cta-btn detail-cta-btn--ghost"
-                disabled={txLoading}
-                onClick={() => run(() => txRefund(c.id), TX_LABELS.refund)}
-              >
-                {txLoading ? <i className="ti ti-loader-2 spinning" /> : <i className="ti ti-receipt-refund" />}
-                CLAIM_REFUND ({c.myContribEth} ETH)
-              </button>
-            </div>
+            <button
+              className="detail-cta-btn detail-cta-btn--ghost" style={{ marginTop: '1rem' }}
+              disabled={txLoading}
+              onClick={() => run(() => txRefund(c.id), TX_LABELS.refund)}
+            >
+              {txLoading ? <i className="ti ti-loader-2 spinning" /> : <i className="ti ti-receipt-refund" />}
+              CLAIM_REFUND ({c.myContribEth} ETH)
+            </button>
           )}
 
           {c.status === 'success' && c.withdrawn && (
-            <div className="detail-withdrawn-note">
+            <div className="detail-withdrawn-note" style={{ marginTop: '1rem' }}>
               <i className="ti ti-circle-check" /> FUNDS_WITHDRAWN
             </div>
           )}
         </div>
+      </div>
 
-        {/* ── RIGHT PANEL ── */}
-        <div className="detail-right">
-          <div className="preview-label-row">
-            <span className="preview-label-dot" />
-            LIVE_CONTRACT_PREVIEW
+      {/* ── INFO ──────────────────────────────────────────── */}
+      <div className="fiche-info">
+
+        {/* LEFT: title + desc */}
+        <div className="fiche-info-left">
+          <h1 className="fiche-title">{c.title}</h1>
+          {c.description
+            ? <p className="fiche-desc">{c.description}</p>
+            : <p className="fiche-desc" style={{ opacity: 0.4, fontStyle: 'italic' }}>No description provided.</p>
+          }
+        </div>
+
+        {/* RIGHT: metadata */}
+        <div className="fiche-meta-grid">
+          <div className="fiche-meta-item">
+            <span className="fiche-meta-label">CATEGORY</span>
+            <span className="fiche-meta-val fiche-meta-val--green">{CATEGORIES[c.category] ?? '—'}</span>
           </div>
-
-          {/* Mini preview card — reuses campaign card CSS */}
-          <div className="detail-preview-card">
-            <div style={{ position: 'relative' }}>
-              {imgUrl ? (
-                <img src={imgUrl} alt={c.title} className="campaign-card-img"
-                  onError={e => { e.target.style.display = 'none'; }} />
-              ) : (
-                <div className="campaign-card-img-placeholder">
-                  <i className="ti ti-photo-off" />
-                </div>
-              )}
-              <span className="campaign-card-cat-badge">
-                CAT: {CATEGORIES[c.category] ?? 'OTHER'}
-              </span>
-              {/* Thin progress bar at bottom of image */}
-              <div className="preview-img-progress-track">
-                <div
-                  className="preview-img-progress-fill"
-                  style={{ width: `${Math.min(c.progress, 100)}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="campaign-card-body">
-              <div className="campaign-top">
-                <span className="campaign-title">{c.title}</span>
-                <Badge status={c.status} />
-              </div>
-              <p className="campaign-hash">ID: {c.creatorShort}</p>
-              {c.description && <p className="campaign-desc">{c.description}</p>}
-
-              <div className="preview-card-divider" />
-
-              <div className="preview-card-stats">
-                <div>
-                  <div className="preview-stat-label">GOAL_THRESHOLD</div>
-                  <div className="preview-stat-value teal">{c.goalEth} ETH</div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div className="preview-stat-label">TIME_REMAINING</div>
-                  <div className="preview-stat-value">{c.timeLeft}</div>
-                </div>
-              </div>
-
-              <div className="preview-card-footer-bar">
-                <span style={{ color: 'var(--green)', fontSize: 10, letterSpacing: '0.06em' }}>
-                  {c.progress}% FUNDED
-                </span>
-                <i className="ti ti-arrows-exchange" style={{ color: 'var(--text-dim)', fontSize: 12 }} />
-              </div>
-            </div>
+          <div className="fiche-meta-item">
+            <span className="fiche-meta-label">CREATED</span>
+            <span className="fiche-meta-val">{createdDate}</span>
           </div>
-
-          {/* Contract / Etherscan link box */}
-          <div className="contract-link-box">
-            <div className="contract-link-label">ETHERSCAN_LINK</div>
-            <div className="contract-link-row">
-              <i className="ti ti-link" style={{ color: 'var(--green)', flexShrink: 0 }} />
-              <a
-                href={etherscanUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="contract-link-url"
-              >
-                sepolia.etherscan.io/address/{c.creatorShort}
+          <div className="fiche-meta-item fiche-meta-item--full">
+            <span className="fiche-meta-label">CREATOR_ADDRESS</span>
+            <div className="fiche-meta-addr-row">
+              <a href={etherscanCreator} target="_blank" rel="noopener noreferrer"
+                className="fiche-meta-val fiche-meta-val--addr">
+                {c.creatorShort}
               </a>
-              <button
-                className="contract-copy-btn"
-                onClick={() => handleCopy(etherscanUrl)}
-                title={copied ? 'Copied!' : 'Copy link'}
-              >
+              <button className="contract-copy-btn" onClick={() => handleCopy(c.creator)}
+                title={copied ? 'Copied!' : 'Copy'}>
                 <i className={`ti ${copied ? 'ti-check' : 'ti-copy'}`} />
               </button>
             </div>
           </div>
+          <div className="fiche-meta-item">
+            <span className="fiche-meta-label">CONTRIBUTORS</span>
+            <span className="fiche-meta-val fiche-meta-val--green">{c.contributorCount}_NODES</span>
+          </div>
+          <div className="fiche-meta-item">
+            <span className="fiche-meta-label">CHAIN</span>
+            <span className="fiche-meta-val fiche-meta-val--green">SEPOLIA_ETH</span>
+          </div>
         </div>
       </div>
 
-      {/* ── Contributors list — full width ── */}
-      <div className="section-header" style={{ marginTop: '2.5rem' }}>
-        <span className="section-title">
-          CONTRIBUTORS
-          {contributors.length > 0 && <span className="section-count">{contributors.length}</span>}
-        </span>
-      </div>
+      {/* ── EVENT LOG ─────────────────────────────────────── */}
+      <div className="fiche-log">
+        <div className="fiche-log-header">
+          <span className="fiche-log-title">ON-CHAIN_EVENT_LOG</span>
+          <span className="fiche-log-realtime">
+            <span className="fiche-live-dot" /> REAL-TIME
+          </span>
+        </div>
 
-      <Card>
-        {contribsLoading
-          ? <Spinner label="LOADING_CONTRIBUTORS..." />
-          : contributors.length === 0
-            ? <EmptyState icon="ti-users" title="NO_CONTRIBUTORS" subtitle="NO_CONTRIBUTIONS_YET." />
-            : (
-              <div className="tx-list">
-                {contributors.map((c, i) => (
-                  <div className="tx-row" key={i}>
-                    <span className="tx-type" style={{ color: 'var(--green)' }}>
-                      <i className="ti ti-heart" /> CONTRIBUTOR
-                    </span>
-                    <span className="tx-actor">
-                      <a
-                        href={`https://sepolia.etherscan.io/address/${c.address}`}
-                        target="_blank" rel="noopener noreferrer"
-                        style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}
-                      >
-                        {c.shortAddr}
-                      </a>
-                    </span>
-                    <span className="tx-amount" style={{ color: 'var(--green)' }}>
-                      +{c.amountEth} ETH
-                    </span>
-                    <span className="tx-date" style={{ color: 'var(--text-dim)', fontSize: 10 }}>
-                      CURRENT_BALANCE
-                    </span>
-                    <a
-                      className="tx-hash"
-                      href={`https://sepolia.etherscan.io/address/${c.address}`}
-                      target="_blank" rel="noopener noreferrer"
-                    >
-                      <i className="ti ti-external-link" />
-                    </a>
-                  </div>
-                ))}
-              </div>
-            )
-        }
-      </Card>
+        {/* Column headers */}
+        <div className="fiche-tx-header">
+          <span>TX_TYPE</span>
+          <span>ADDRESS</span>
+          <span>AMOUNT_ETH</span>
+          <span>TIMESTAMP</span>
+          <span>VERIFY</span>
+        </div>
 
-      {/* ── Transaction history — full width ── */}
-      <div className="section-header" style={{ marginTop: '2.5rem' }}>
-        <span className="section-title">
-          TRANSACTION_HISTORY
-          {events.length > 0 && <span className="section-count">{events.length}</span>}
-        </span>
-      </div>
-
-      <Card>
         {eventsLoading
-          ? <Spinner label="LOADING_HISTORY..." />
+          ? <div style={{ padding: '2rem 1rem' }}><Spinner label="LOADING_EVENTS..." /></div>
           : events.length === 0
             ? <EmptyState icon="ti-list" title="NO_TRANSACTIONS" subtitle="NO_CONTRIBUTIONS_YET." />
-            : <div className="tx-list">{events.map((e, i) => <TxRow key={i} event={e} />)}</div>
+            : events.map((e, i) => <TxRow key={i} event={e} />)
         }
-      </Card>
+      </div>
     </div>
+  );
+}
+
+// Inline countdown value component (no wrapper div)
+function CountdownVal({ deadline, status }) {
+  const { display, isUrgent, done } = useCountdown(deadline);
+  if (status !== 'active') return <span className="fiche-countdown-val fiche-countdown-val--dim">--:--:--:--</span>;
+  return (
+    <span className={`fiche-countdown-val${isUrgent ? ' fiche-countdown-val--urgent' : ''}`}>
+      {done ? 'EXPIRED' : display}
+    </span>
   );
 }
