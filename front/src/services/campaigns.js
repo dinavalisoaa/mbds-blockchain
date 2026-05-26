@@ -66,6 +66,73 @@ function normalize(id, raw) {
   };
 }
 
+export async function fetchCampaignById(id) {
+  const numId = Number(id);
+  const [raw, contributorCount] = await Promise.all([
+    readContract.campaigns(numId),
+    readContract.getContributorCount(numId).catch(() => 0n),
+  ]);
+  // Zero-address means the ID was never created
+  if (raw.creator === '0x0000000000000000000000000000000000000000') {
+    throw new Error('Campagne introuvable');
+  }
+  return {
+    ...normalize(numId, raw),
+    contributorCount: Number(contributorCount),
+  };
+}
+
+export async function fetchCampaignEvents(id) {
+  const bigId = BigInt(id);
+
+  const [contributions, withdrawals, refunds, excesses, cancellations] = await Promise.all([
+    readContract.queryFilter(readContract.filters.ContributionReceived(bigId)),
+    readContract.queryFilter(readContract.filters.FundsWithdrawn(bigId)),
+    readContract.queryFilter(readContract.filters.RefundIssued(bigId)),
+    readContract.queryFilter(readContract.filters.ExcessRefunded(bigId)),
+    readContract.queryFilter(readContract.filters.CampaignCancelled(bigId)),
+  ]);
+
+  const allEvents = [
+    ...contributions.map(e => ({
+      type: 'contribution', actor: e.args.contributor,
+      amountEth: fmtEth(e.args.amount), blockNumber: e.blockNumber, txHash: e.transactionHash,
+    })),
+    ...withdrawals.map(e => ({
+      type: 'withdrawal', actor: e.args.creator,
+      amountEth: fmtEth(e.args.amount), blockNumber: e.blockNumber, txHash: e.transactionHash,
+    })),
+    ...refunds.map(e => ({
+      type: 'refund', actor: e.args.contributor,
+      amountEth: fmtEth(e.args.amount), blockNumber: e.blockNumber, txHash: e.transactionHash,
+    })),
+    ...excesses.map(e => ({
+      type: 'excess_refund', actor: e.args.contributor,
+      amountEth: fmtEth(e.args.excess), blockNumber: e.blockNumber, txHash: e.transactionHash,
+    })),
+    ...cancellations.map(e => ({
+      type: 'cancelled', actor: e.args.creator,
+      amountEth: null, blockNumber: e.blockNumber, txHash: e.transactionHash,
+    })),
+  ];
+
+  if (allEvents.length === 0) return [];
+
+  // Batch-fetch timestamps for unique block numbers
+  const uniqueBlocks = [...new Set(allEvents.map(e => e.blockNumber))];
+  const blockMap = {};
+  await Promise.all(
+    uniqueBlocks.map(async bn => {
+      const block = await readProvider.getBlock(bn);
+      blockMap[bn] = block.timestamp;
+    })
+  );
+
+  return allEvents
+    .map(e => ({ ...e, timestamp: blockMap[e.blockNumber] }))
+    .sort((a, b) => b.blockNumber - a.blockNumber);
+}
+
 // ── utils (kept internal to avoid circular imports) ─────────
 function fmtEth(wei) {
   return parseFloat(ethers.formatEther(wei)).toFixed(4);
