@@ -1,5 +1,6 @@
 import { ethers } from 'ethers';
-import { getSignedContract } from './wallet.js';
+import { getSignedContract, } from './wallet.js';
+import { ABI } from './contract.js';
 
 export async function txCreateCampaign(title, desc, imageIPFS, category, goalEth, deadlineDate) {
   const contract = getSignedContract();
@@ -24,7 +25,16 @@ export async function txCreateCampaign(title, desc, imageIPFS, category, goalEth
     goalWei,
     BigInt(duration),
   );
-  return tx.wait();
+  const receipt = await tx.wait();
+
+  // Parse CampaignCreated event → get new campaign ID
+  const iface  = new ethers.Interface(ABI);
+  const parsed = receipt.logs
+    .map(log => { try { return iface.parseLog(log); } catch { return null; } })
+    .find(e => e?.name === 'CampaignCreated');
+  const campaignId = parsed ? Number(parsed.args.id) : null;
+
+  return Object.assign(receipt, { campaignId });
 }
 
 export async function txPostUpdate(id, message) {

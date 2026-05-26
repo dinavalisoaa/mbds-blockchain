@@ -82,6 +82,17 @@ export async function fetchCampaignById(id) {
   };
 }
 
+export async function fetchContributions(id) {
+  const numId = Number(id);
+  const [addrs, amounts] = await readContract.getContributions(numId);
+  return addrs.map((addr, i) => ({
+    address:    addr,
+    shortAddr:  shortAddr(addr),
+    amount:     amounts[i],
+    amountEth:  fmtEth(amounts[i]),
+  })).filter(c => c.amount > 0n);
+}
+
 export async function fetchCampaignEvents(id) {
   const bigId = BigInt(id);
 

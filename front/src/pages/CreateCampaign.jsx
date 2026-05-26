@@ -1,8 +1,9 @@
 import { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { txCreateCampaign } from '../services/transactions.js';
-import { uploadToPinata, ipfsUrl } from '../services/pinata.js';
+import { uploadToPinata } from '../services/pinata.js';
 import { useTx } from '../hooks/useTx.js';
+import { useToast } from '../context/ToastContext.jsx';
 import { CATEGORIES, TX_LABELS } from '../constants.js';
 import { Badge } from '../components/ui/index.js';
 
@@ -21,33 +22,44 @@ const getDeadlineISO = days => {
 
 export default function CreateCampaign({ wallet }) {
   const runTx = useTx();
+  const { add: addToast } = useToast();
   const navigate = useNavigate();
   const fileRef = useRef();
 
-  const [fields,    setFields]    = useState(EMPTY);
-  const [imageFile, setImageFile] = useState(null);
-  const [preview,   setPreview]   = useState(null);
-  const [loading,   setLoading]   = useState(false);
-  const [copied,    setCopied]    = useState(false);
+  const [fields,     setFields]     = useState(EMPTY);
+  const [imageFile,  setImageFile]  = useState(null);
+  const [preview,    setPreview]    = useState(null);
+  const [loading,    setLoading]    = useState(false);
+  const [loadingMsg, setLoadingMsg] = useState('');
+  const [copied,     setCopied]     = useState(false);
 
   const set = key => e => setFields(f => ({ ...f, [key]: e.target.value }));
 
   const handleFile = e => {
     const file = e.target.files[0];
     if (!file) return;
+    console.log('[CREATE] File selected:', file.name, file.type, file.size, 'bytes');
     setImageFile(file);
     setPreview(URL.createObjectURL(file));
   };
 
   const handleSubmit = async () => {
-    if (!wallet.connected) return;
+    console.log('[CREATE] Submit clicked — wallet:', wallet?.connected, 'fields:', fields);
+    if (!wallet.connected) { console.warn('[CREATE] Wallet not connected'); return; }
     setLoading(true);
     try {
       let cid = '';
       if (imageFile) {
+        console.log('[CREATE] Uploading to Pinata...', imageFile.name);
+        setLoadingMsg('UPLOADING_PHOTO...');
         cid = await uploadToPinata(imageFile);
+        console.log('[CREATE] Pinata upload OK — CID:', cid);
+      } else {
+        console.log('[CREATE] No image — skipping upload');
       }
-      await runTx(
+      console.log('[CREATE] Sending tx — title:', fields.title, 'goal:', fields.goal, 'days:', fields.days, 'cid:', cid);
+      setLoadingMsg('CREATING_CAMPAIGN...');
+      const receipt = await runTx(
         () => txCreateCampaign(
           fields.title, fields.desc, cid,
           fields.category, fields.goal,
@@ -55,9 +67,14 @@ export default function CreateCampaign({ wallet }) {
         ),
         TX_LABELS.createCampaign
       );
-      navigate('/');
-    } catch { /* toast shows error */ }
-    finally { setLoading(false); }
+      console.log('[CREATE] Tx receipt:', receipt);
+      console.log('[CREATE] Campaign ID:', receipt?.campaignId);
+      const newId = receipt?.campaignId;
+      navigate(newId != null ? `/campaign/${newId}` : '/');
+    } catch (e) {
+      console.error('[CREATE] Error:', e);
+      addToast({ type: 'error', message: e?.reason || e?.shortMessage || e?.message || 'Erreur inattendue' });
+    } finally { setLoading(false); setLoadingMsg(''); }
   };
 
   const handleCopy = () => {
@@ -183,7 +200,10 @@ export default function CreateCampaign({ wallet }) {
                 ? <i className="ti ti-loader-2 spinning" />
                 : <i className="ti ti-rocket" />
               }
-              {wallet.connected ? 'DECODE_AND_DEPLOY_CONTRACT' : 'CONNECT_WALLET_TO_DEPLOY'}
+              {loading
+                ? loadingMsg || 'LOADING...'
+                : wallet.connected ? 'DECODE_AND_DEPLOY_CONTRACT' : 'CONNECT_WALLET_TO_DEPLOY'
+              }
             </button>
           </div>
         </div>

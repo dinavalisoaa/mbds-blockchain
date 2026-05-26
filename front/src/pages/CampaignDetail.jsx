@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { fetchCampaignById, fetchCampaignEvents } from '../services/campaigns.js';
+import { fetchCampaignById, fetchCampaignEvents, fetchContributions } from '../services/campaigns.js';
 import { txContribute, txWithdraw, txRefund } from '../services/transactions.js';
 import { useCountdown } from '../hooks/useCountdown.js';
 import { ipfsUrl } from '../services/pinata.js';
@@ -66,8 +66,10 @@ export default function CampaignDetail({ wallet }) {
 
   const [campaign,      setCampaign]      = useState(null);
   const [events,        setEvents]        = useState([]);
+  const [contributors,  setContributors]  = useState([]);
   const [loading,       setLoading]       = useState(true);
   const [eventsLoading, setEventsLoading] = useState(true);
+  const [contribsLoading, setContribsLoading] = useState(true);
   const [error,         setError]         = useState(null);
   const [amount,        setAmount]        = useState('');
   const [txLoading,     setTxLoading]     = useState(false);
@@ -94,6 +96,18 @@ export default function CampaignDetail({ wallet }) {
       .then(evs => { if (alive) setEvents(evs); })
       .catch(() => {})
       .finally(() => { if (alive) setEventsLoading(false); });
+    return () => { alive = false; };
+  }, [id, campaign]);
+
+  // Fetch contributors list
+  useEffect(() => {
+    if (!campaign) return;
+    let alive = true;
+    setContribsLoading(true);
+    fetchContributions(id)
+      .then(list => { if (alive) setContributors(list); })
+      .catch(() => {})
+      .finally(() => { if (alive) setContribsLoading(false); });
     return () => { alive = false; };
   }, [id, campaign]);
 
@@ -365,6 +379,55 @@ export default function CampaignDetail({ wallet }) {
           </div>
         </div>
       </div>
+
+      {/* ── Contributors list — full width ── */}
+      <div className="section-header" style={{ marginTop: '2.5rem' }}>
+        <span className="section-title">
+          CONTRIBUTORS
+          {contributors.length > 0 && <span className="section-count">{contributors.length}</span>}
+        </span>
+      </div>
+
+      <Card>
+        {contribsLoading
+          ? <Spinner label="LOADING_CONTRIBUTORS..." />
+          : contributors.length === 0
+            ? <EmptyState icon="ti-users" title="NO_CONTRIBUTORS" subtitle="NO_CONTRIBUTIONS_YET." />
+            : (
+              <div className="tx-list">
+                {contributors.map((c, i) => (
+                  <div className="tx-row" key={i}>
+                    <span className="tx-type" style={{ color: 'var(--green)' }}>
+                      <i className="ti ti-heart" /> CONTRIBUTOR
+                    </span>
+                    <span className="tx-actor">
+                      <a
+                        href={`https://sepolia.etherscan.io/address/${c.address}`}
+                        target="_blank" rel="noopener noreferrer"
+                        style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}
+                      >
+                        {c.shortAddr}
+                      </a>
+                    </span>
+                    <span className="tx-amount" style={{ color: 'var(--green)' }}>
+                      +{c.amountEth} ETH
+                    </span>
+                    <span className="tx-date" style={{ color: 'var(--text-dim)', fontSize: 10 }}>
+                      CURRENT_BALANCE
+                    </span>
+                    <a
+                      className="tx-hash"
+                      href={`https://sepolia.etherscan.io/address/${c.address}`}
+                      target="_blank" rel="noopener noreferrer"
+                    >
+                      <i className="ti ti-external-link" />
+                    </a>
+                  </div>
+                ))}
+              </div>
+            )
+        }
+      </Card>
 
       {/* ── Transaction history — full width ── */}
       <div className="section-header" style={{ marginTop: '2.5rem' }}>
