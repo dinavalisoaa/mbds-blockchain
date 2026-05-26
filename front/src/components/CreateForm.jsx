@@ -34,7 +34,7 @@ export default function CreateForm({ wallet, onCreated }) {
     try {
       let cid = '';
       if (imageFile) {
-        setIpfsMsg('Upload image sur IPFS…');
+        setIpfsMsg('UPLOADING_TO_IPFS...');
         cid = await uploadToPinata(imageFile);
         setIpfsMsg(null);
       }
@@ -55,43 +55,43 @@ export default function CreateForm({ wallet, onCreated }) {
   };
 
   return (
-    <Card title="Créer une campagne" icon="ti-rocket" className="form-create">
+    <Card title="CREATE_CAMPAIGN" icon="ti-rocket" className="form-create">
       <div className="form-grid">
         <div className="col-full">
-          <Input label="Titre" required type="text"
-            placeholder="Ex : Station météo pour le village"
+          <Input label="CAMPAIGN_TITLE" required type="text"
+            placeholder="CAMPAIGN_TITLE_"
             value={fields.title} onChange={set('title')} />
         </div>
 
         <div className="col-full">
-          <Input label="Description" type="text"
-            placeholder="Courte description du projet"
+          <Input label="DESCRIPTION" type="text"
+            placeholder="SHORT_DESCRIPTION_"
             value={fields.desc} onChange={set('desc')} />
         </div>
 
         <div className="col-full">
-          <label>Image de campagne</label>
+          <label>CAMPAIGN_IMAGE</label>
           <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} />
           {preview && (
             <img src={preview} alt="preview"
-              style={{ marginTop: '0.5rem', maxHeight: 160, borderRadius: 8, objectFit: 'cover' }} />
+              style={{ marginTop: '0.5rem', maxHeight: 160, borderRadius: 4, objectFit: 'cover' }} />
           )}
         </div>
 
         <div>
-          <label>Catégorie</label>
+          <label>CATEGORY</label>
           <select value={fields.category} onChange={set('category')}>
             {CATEGORIES.map((cat, i) => <option key={i} value={i}>{cat}</option>)}
           </select>
         </div>
 
         <div>
-          <Input label="Objectif (ETH)" required type="number" min="0.01" step="0.01"
+          <Input label="GOAL_ETH" required type="number" min="0.01" step="0.01"
             placeholder="0.5" value={fields.goal} onChange={set('goal')} />
         </div>
 
         <div>
-          <Input label="Date de fin" required type="date" min={todayISO()}
+          <Input label="DEADLINE" required type="date" min={todayISO()}
             value={fields.deadline} onChange={set('deadline')} />
         </div>
       </div>
@@ -100,7 +100,7 @@ export default function CreateForm({ wallet, onCreated }) {
 
       <Button variant="primary" block icon="ti-rocket" loading={loading} onClick={handleSubmit}
         disabled={!wallet.connected}>
-        {wallet.connected ? 'Créer la campagne' : 'Connectez MetaMask pour créer'}
+        {wallet.connected ? 'DEPLOY_CAMPAIGN' : 'CONNECT_WALLET_TO_CREATE'}
       </Button>
     </Card>
   );

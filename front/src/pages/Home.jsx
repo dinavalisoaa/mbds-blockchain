@@ -1,16 +1,53 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { fetchAllCampaigns } from '../services/campaigns.js';
 import { txRefundAll } from '../services/transactions.js';
 import { useTx } from '../hooks/useTx.js';
-import { TX_LABELS } from '../constants.js';
-import CreateForm   from '../components/CreateForm.jsx';
+import { TX_LABELS, CATEGORIES } from '../constants.js';
 import CampaignCard from '../components/CampaignCard.jsx';
 import { Alert, Spinner, EmptyState, Button } from '../components/ui/index.js';
 
-export default function Home({ wallet, diagnostic, activeCategory }) {
+// ── Live TX Feed ─────────────────────────────────────────
+function LiveTxFeed({ campaigns }) {
+  if (!campaigns.length) return null;
+
+  const recent = [...campaigns]
+    .sort((a, b) => Number(b.createdAt) - Number(a.createdAt))
+    .slice(0, 6);
+
+  const timeAgo = ts => {
+    const diff = Math.floor(Date.now() / 1000) - Number(ts);
+    if (diff < 60)    return `${diff}S_AGO`;
+    if (diff < 3600)  return `${Math.floor(diff / 60)}M_AGO`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}H_AGO`;
+    return `${Math.floor(diff / 86400)}D_AGO`;
+  };
+
+  return (
+    <div className="tx-feed">
+      <div className="tx-feed-header">
+        <span className="tx-feed-title">LIVE_TRANSACTION_FEED_SEPOLIA</span>
+        <span className="tx-feed-syncing">SYNCING...</span>
+      </div>
+      {recent.map(c => (
+        <div key={c.id} className="tx-feed-row">
+          <span className="tx-feed-addr">{c.creatorShort}</span>
+          <span className="tx-feed-action">CAMPAIGN_CREATED: {c.title}</span>
+          <span className="tx-feed-time">{timeAgo(c.createdAt)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Home Page ────────────────────────────────────────────
+export default function Home({ wallet, diagnostic }) {
+  const navigate = useNavigate();
   const runTx = useTx();
-  const [campaigns, setCampaigns] = useState([]);
-  const [loading,   setLoading]   = useState(false);
+  const [campaigns,   setCampaigns]   = useState([]);
+  const [loading,     setLoading]     = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [catFilter,   setCatFilter]   = useState(null); // null = ALL, number = category index
   const refundedIds = useRef(new Set());
 
   const loadCampaigns = useCallback(async (addr = wallet.address) => {
@@ -45,41 +82,104 @@ export default function Home({ wallet, diagnostic, activeCategory }) {
     })();
   }, [campaigns, wallet.connected, wallet.address]);
 
-  const filtered = activeCategory === null
-    ? campaigns
-    : campaigns.filter(c => c.category === activeCategory);
-
-  const renderList = () => {
-    if (loading) return <Spinner label="Chargement des campagnes…" />;
-    if (!wallet.connected)
-      return diagnostic
-        ? <Alert type={diagnostic.ok ? 'success' : 'error'}>{diagnostic.msg}</Alert>
-        : <EmptyState title="Connectez MetaMask pour voir les campagnes." />;
-    if (!filtered.length)
-      return <EmptyState icon="ti-rocket" title="Aucune campagne" subtitle={
-        activeCategory !== null ? 'Aucune campagne dans cette catégorie.' : 'Créez la première !'
-      } />;
-    return filtered.map(c => (
-      <CampaignCard key={c.id} campaign={c} wallet={wallet} onAction={loadCampaigns} />
-    ));
-  };
+  const filtered = campaigns
+    .filter(c => catFilter === null || c.category === catFilter)
+    .filter(c => !searchQuery || c.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
     <>
-      <CreateForm wallet={wallet} onCreated={loadCampaigns} />
+      {/* ── Hero ── */}
+      <section className="hero">
+        <div className="hero-left">
+          <div className="hero-status-badge">
+            <span className="hero-status-dot" />
+            NETWORK_STATUS: SEPOLIA_TESTNET_STABLE
+          </div>
+          <h1 className="hero-heading">
+            IMMUTABLE FUNDRAISING FOR THE{' '}
+            <span className="accent">NEXT GENERATION</span>
+            {' '}OF DAPPS.
+          </h1>
+          <p className="hero-subtext">
+            DEPLOY TRANSPARENT, TRUSTLESS CROWDFUNDING CAMPAIGNS ON ETHEREUM SEPOLIA.
+            FUNDS LOCKED IN SMART CONTRACTS — RELEASED ONLY ON SUCCESS.
+          </p>
+          <div className="hero-ctas">
+            <Button
+              variant="primary"
+              icon="ti-rocket"
+              onClick={() => navigate('/create')}
+            >
+              START_CAMPAIGN_V1
+            </Button>
+            <Button variant="outline" icon="ti-chart-bar">
+              VIEW_PROTOCOL_STATS
+            </Button>
+          </div>
+        </div>
+        <div className="hero-right">
+          <div className="hero-image-placeholder">
+            <i className="ti ti-cpu-2" style={{ fontSize: 56, opacity: 0.15 }} />
+          </div>
+        </div>
+      </section>
 
-      <div className="section-header">
-        <span className="section-title">
-          Campagnes
-          {filtered.length > 0 && <span className="section-count">{filtered.length}</span>}
-        </span>
+      {/* ── Search + category filter bar ── */}
+      <div className="search-bar">
+        <span className="search-bar-label">SEARCH_REGISTRY</span>
+        <div className="search-input-wrap">
+          <i className="ti ti-search search-input-icon" />
+          <input
+            type="text"
+            placeholder="QUERY_CONTRACT_OR_NAME_"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        {/* ALL + real categories */}
+        <button
+          className={`filter-chip${catFilter === null ? ' active' : ''}`}
+          onClick={() => setCatFilter(null)}
+        >ALL</button>
+        {CATEGORIES.map((cat, i) => (
+          <button
+            key={i}
+            className={`filter-chip${catFilter === i ? ' active' : ''}`}
+            onClick={() => setCatFilter(i)}
+          >{cat}</button>
+        ))}
+
+        <button className="sort-btn">
+          <i className="ti ti-sort-descending" />SORT_BY: RECENT_DEPLOYMENTS
+        </button>
         <Button variant="ghost" icon="ti-refresh" loading={loading}
           disabled={!wallet.connected} onClick={() => loadCampaigns()}>
-          Actualiser
+          REFRESH
         </Button>
       </div>
 
-      <div id="campaigns-list">{renderList()}</div>
+      {/* ── Campaign grid ── */}
+      {loading ? (
+        <Spinner label="LOADING_CAMPAIGNS..." />
+      ) : !wallet.connected ? (
+        diagnostic
+          ? <Alert type={diagnostic.ok ? 'success' : 'error'}>{diagnostic.msg}</Alert>
+          : <EmptyState title="CONNECT_WALLET_TO_VIEW_CAMPAIGNS." />
+      ) : !filtered.length ? (
+        <EmptyState icon="ti-terminal" title="NO_CAMPAIGNS_FOUND" subtitle={
+          catFilter !== null ? 'NO_CAMPAIGNS_IN_CATEGORY.' : 'CREATE_THE_FIRST_ONE.'
+        } />
+      ) : (
+        <div className="campaigns-grid">
+          {filtered.map(c => (
+            <CampaignCard key={c.id} campaign={c} wallet={wallet} onAction={loadCampaigns} />
+          ))}
+        </div>
+      )}
+
+      {/* ── Live TX Feed ── */}
+      {wallet.connected && <LiveTxFeed campaigns={campaigns} />}
     </>
   );
 }
