@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { txContribute, txWithdraw, txRefund, txCancelCampaign } from '../services/transactions.js';
 import { ipfsUrl } from '../services/pinata.js';
 import { useTx } from '../hooks/useTx.js';
@@ -81,6 +82,9 @@ export default function CampaignCard({ campaign: c, wallet, onAction }) {
           Récupérer {c.myContribEth} ETH
         </Button>
       )}
+      <Link to={`/campaign/${c.id}`} className="card-detail-link">
+        <i className="ti ti-arrow-right" /> Voir les détails
+      </Link>
     </article>
   );
 }
