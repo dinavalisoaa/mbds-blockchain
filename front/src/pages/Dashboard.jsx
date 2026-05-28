@@ -38,17 +38,17 @@ function MyCampaignRow({ campaign: c, onAction }) {
         {c.status === 'success' && !c.withdrawn && (
           <Button variant="primary" size="sm" icon="ti-download" loading={loading}
             onClick={() => run(() => txWithdraw(c.id), TX_LABELS.withdraw)}>
-            Retirer {c.amountRaisedEth} ETH
+            WITHDRAW
           </Button>
         )}
         {c.status === 'active' && c.amountRaised === 0n && (
           <Button variant="danger" size="sm" icon="ti-x" loading={loading}
             onClick={() => run(() => txCancelCampaign(c.id), TX_LABELS.cancelCampaign)}>
-            Annuler
+            CANCEL
           </Button>
         )}
         {c.status === 'success' && c.withdrawn && (
-          <span className="dash-withdrawn"><i className="ti ti-circle-check" /> Retiré</span>
+          <span className="dash-withdrawn"><i className="ti ti-circle-check" /> WITHDRAWN</span>
         )}
       </div>
     </div>
@@ -71,8 +71,8 @@ function MyContribRow({ campaign: c, onAction }) {
       <div className="dash-row-info">
         <div className="dash-row-title">{c.title}</div>
         <div className="dash-row-meta">
-          <span><i className="ti ti-coin" /> Ma contribution : <strong>{c.myContribEth} ETH</strong></span>
-          <span>· Objectif : {c.goalEth} ETH</span>
+          <span><i className="ti ti-coin" /> MY_CONTRIBUTION: <strong>{c.myContribEth} ETH</strong></span>
+          <span>· GOAL: {c.goalEth} ETH</span>
         </div>
       </div>
 
@@ -82,14 +82,16 @@ function MyContribRow({ campaign: c, onAction }) {
         {c.status === 'failed' && c.myContrib > 0n && (
           <Button variant="ghost" size="sm" icon="ti-receipt-refund" loading={loading}
             onClick={() => run(() => txRefund(c.id), TX_LABELS.refund)}>
-            Récupérer {c.myContribEth} ETH
+            REFUND
           </Button>
         )}
         {c.status === 'success' && (
-          <span className="dash-withdrawn"><i className="ti ti-circle-check" /> Objectif atteint</span>
+          <span className="dash-withdrawn"><i className="ti ti-circle-check" /> GOAL_REACHED</span>
         )}
         {c.status === 'active' && (
-          <span style={{ fontSize: 11, color: 'var(--blue)' }}><i className="ti ti-clock" /> En cours</span>
+          <span style={{ fontSize: 11, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            <i className="ti ti-clock" /> IN_PROGRESS
+          </span>
         )}
       </div>
     </div>
@@ -133,60 +135,58 @@ export default function Dashboard({ wallet }) {
   const pendingRefund   = myContribs.filter(c  => c.status === 'failed'  && c.myContrib > 0n).length;
   const totalContrib    = myContribs.reduce((sum, c) => sum + Number(c.myContribEth), 0).toFixed(4);
 
-  if (loading) return <Spinner label="Chargement du dashboard…" />;
+  if (loading) return <Spinner label="LOADING_DASHBOARD..." />;
 
   return (
     <div>
-      <h2 className="page-title">
-        <i className="ti ti-layout-dashboard" /> Dashboard
-      </h2>
+      <h2 className="page-title">DASHBOARD</h2>
 
       <div className="stats-grid">
-        <StatCard icon="ti-rocket"         value={myCampaigns.length}    label="Campagnes créées" />
-        <StatCard icon="ti-coin"           value={`${totalContrib} ETH`} label="Total contribué" />
-        <StatCard icon="ti-download"       value={pendingWithdraw}       label="Retraits disponibles"
+        <StatCard icon="ti-rocket"         value={myCampaigns.length}    label="CAMPAIGNS_CREATED" />
+        <StatCard icon="ti-coin"           value={`${totalContrib} ETH`} label="TOTAL_CONTRIBUTED" />
+        <StatCard icon="ti-download"       value={pendingWithdraw}       label="PENDING_WITHDRAWALS"
           color={pendingWithdraw > 0 ? 'var(--green)' : undefined} />
-        <StatCard icon="ti-receipt-refund" value={pendingRefund}         label="Remboursements dispo."
+        <StatCard icon="ti-receipt-refund" value={pendingRefund}         label="PENDING_REFUNDS"
           color={pendingRefund > 0 ? 'var(--blue)' : undefined} />
       </div>
 
       {pendingWithdraw > 0 && (
         <Alert type="success">
-          <strong>{pendingWithdraw} campagne{pendingWithdraw > 1 ? 's' : ''}</strong> prête{pendingWithdraw > 1 ? 's' : ''} pour retrait.
+          <strong>{pendingWithdraw} CAMPAIGN{pendingWithdraw > 1 ? 'S' : ''}</strong> READY_FOR_WITHDRAWAL.
         </Alert>
       )}
       {pendingRefund > 0 && (
         <Alert type="info">
-          <strong>{pendingRefund} remboursement{pendingRefund > 1 ? 's' : ''}</strong> disponible{pendingRefund > 1 ? 's' : ''}.
+          <strong>{pendingRefund} REFUND{pendingRefund > 1 ? 'S' : ''}</strong> AVAILABLE.
         </Alert>
       )}
 
       <div className="section-header" style={{ marginTop: '1.5rem' }}>
         <span className="section-title">
-          <i className="ti ti-rocket" /> Mes campagnes
+          MY_CAMPAIGNS
           <span className="section-count">{myCampaigns.length}</span>
         </span>
       </div>
 
       <Card>
         {myCampaigns.length === 0
-          ? <EmptyState icon="ti-rocket" title="Aucune campagne créée"
-              subtitle="Retournez sur l'accueil pour créer votre première campagne." />
+          ? <EmptyState icon="ti-rocket" title="NO_CAMPAIGNS_CREATED"
+              subtitle="GO_TO_HOME_TO_DEPLOY_YOUR_FIRST_CAMPAIGN." />
           : myCampaigns.map(c => <MyCampaignRow key={c.id} campaign={c} onAction={load} />)
         }
       </Card>
 
       <div className="section-header" style={{ marginTop: '1.5rem' }}>
         <span className="section-title">
-          <i className="ti ti-heart" /> Mes contributions
+          MY_CONTRIBUTIONS
           <span className="section-count">{myContribs.length}</span>
         </span>
       </div>
 
       <Card>
         {myContribs.length === 0
-          ? <EmptyState icon="ti-heart" title="Aucune contribution"
-              subtitle="Vous n'avez pas encore contribué à une campagne." />
+          ? <EmptyState icon="ti-heart" title="NO_CONTRIBUTIONS"
+              subtitle="YOU_HAVE_NOT_CONTRIBUTED_TO_ANY_CAMPAIGN." />
           : myContribs.map(c => <MyContribRow key={c.id} campaign={c} onAction={load} />)
         }
       </Card>

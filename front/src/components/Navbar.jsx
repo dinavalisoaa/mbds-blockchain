@@ -1,74 +1,64 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { Button } from './ui/index.js';
-import { CATEGORIES } from '../constants.js';
 
-const ALL_CATEGORIES = [{ id: null, label: 'Toutes' }, ...CATEGORIES.map((label, i) => ({ id: i, label }))];
-
-export default function Navbar({ wallet, connecting, theme, onToggleTheme, activeCategory, onCategoryChange, onConnect, onDisconnect }) {
-  const { pathname } = useLocation();
+export default function Navbar({ wallet, connecting, theme, onToggleTheme, onConnect, onDisconnect }) {
   const short = addr => `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 
   return (
     <header>
       <nav className="navbar">
         <div className="navbar-brand">
-          <span className="network-tag">Sepolia Testnet</span>
-          <span className="navbar-title">⛓ Crowdfunding</span>
+          <span className="network-tag">SEPOLIA_TESTNET</span>
+          <span className="navbar-title">ETHERFUND_SEPOLIA</span>
         </div>
 
-        {wallet.connected && (
-          <div className="navbar-nav">
-            <NavLink to="/" end className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-              <i className="ti ti-home" /> Accueil
-            </NavLink>
+        <div className="navbar-nav">
+          <NavLink to="/" end className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+            EXPLORE
+          </NavLink>
+          {wallet.connected && (
             <NavLink to="/dashboard" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-              <i className="ti ti-layout-dashboard" /> Dashboard
+              DASHBOARD
             </NavLink>
+          )}
+          {wallet.connected && (
             <NavLink to="/create" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-              <i className="ti ti-plus" /> Créer une campagne
+              <i className="ti ti-rocket" /> CREATE
             </NavLink>
-          </div>
-        )}
+          )}
+          <a href="#" className="nav-link">DOCS</a>
+        </div>
 
         <div className="navbar-right">
           <button
             className="theme-toggle"
             onClick={onToggleTheme}
-            aria-label={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
-            title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
+            aria-label="Toggle theme"
+            style={{ display: 'none' }}
           >
             <i className={`ti ${theme === 'dark' ? 'ti-sun' : 'ti-moon'}`} />
+          </button>
+
+          <button className="navbar-bell" aria-label="Notifications">
+            <i className="ti ti-bell" />
           </button>
 
           {wallet.connected ? (
             <div className="wallet-pill">
               <span className="wallet-dot" />
               <span className="wallet-addr">{short(wallet.address)}</span>
-              <button className="btn-ghost btn-sm btn-disconnect" onClick={onDisconnect} title="Déconnecter">
+              <button className="btn-ghost btn-sm btn-disconnect" onClick={onDisconnect} title="Disconnect">
                 <i className="ti ti-plug-x" />
               </button>
             </div>
           ) : (
             <Button variant="primary" icon="ti-wallet" loading={connecting} onClick={onConnect}>
-              Connecter MetaMask
+              CONNECT_WALLET
             </Button>
           )}
         </div>
       </nav>
 
-      {pathname === '/' && (
-        <div className="filter-bar" role="navigation" aria-label="Filtrer par catégorie">
-          {ALL_CATEGORIES.map(cat => (
-            <button
-              key={cat.id ?? 'all'}
-              className={`filter-chip${activeCategory === cat.id ? ' active' : ''}`}
-              onClick={() => onCategoryChange(cat.id)}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-      )}
     </header>
   );
 }

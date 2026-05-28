@@ -1,13 +1,13 @@
 export const CATEGORIES = [
-  'Technologie', 'Art', 'Social', 'Environnement',
-  'Éducation', 'Musique', 'Film', 'Jeux', 'Alimentation', 'Autre',
+  'TECHNOLOGY', 'ART', 'SOCIAL', 'ENVIRONMENT',
+  'EDUCATION', 'MUSIC', 'FILM', 'GAMING', 'FOOD_TECH', 'OTHER',
 ];
 
 export const TX_LABELS = {
-  contribute:     { pending: 'Contribution en attente…',   success: 'Contribution confirmée !' },
-  withdraw:       { pending: 'Retrait en attente…',        success: 'Fonds retirés avec succès !' },
-  refund:         { pending: 'Remboursement en attente…',  success: 'Remboursement reçu !' },
-  cancelCampaign: { pending: 'Annulation en attente…',     success: 'Campagne annulée.' },
-  createCampaign: { pending: 'Création en cours…',         success: 'Campagne créée !' },
-  refundAll:      { pending: 'Remboursements en cours…',   success: 'Remboursements effectués !' },
+  contribute:     { pending: 'CONTRIBUTION_PENDING...',   success: 'CONTRIBUTION_CONFIRMED' },
+  withdraw:       { pending: 'WITHDRAWAL_PENDING...',     success: 'FUNDS_WITHDRAWN' },
+  refund:         { pending: 'REFUND_PENDING...',         success: 'REFUND_RECEIVED' },
+  cancelCampaign: { pending: 'CANCELLATION_PENDING...',   success: 'CAMPAIGN_CANCELLED' },
+  createCampaign: { pending: 'DEPLOYING_CAMPAIGN...',     success: 'CAMPAIGN_DEPLOYED' },
+  refundAll:      { pending: 'REFUNDS_PROCESSING...',     success: 'REFUNDS_COMPLETE' },
 };

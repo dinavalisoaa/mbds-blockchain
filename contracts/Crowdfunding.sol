@@ -35,6 +35,7 @@ contract Crowdfunding is ReentrancyGuard {
     mapping(uint256 => mapping(address => uint256)) public  contributions;
     mapping(uint256 => address[])                   private _contributors;
     mapping(uint256 => mapping(address => bool))    private _hasContributed;
+    mapping(address => uint256[])                   private _campaignsByCreator;
 
     // ─────────────────────────────────────────────────────────────
     // EVENTS
@@ -79,6 +80,9 @@ contract Crowdfunding is ReentrancyGuard {
 
     /// @notice Émis quand un remboursement automatique échoue (destinataire non payable)
     event RefundFailed(uint256 indexed id, address indexed contributor, uint256 amount);
+
+    event DeadlineExtended(uint256 indexed id, address indexed creator, uint256 newDeadline);
+    event CampaignMetaUpdated(uint256 indexed id, address indexed creator);
 
     /// @notice Émis quand le créateur publie une mise à jour
     event CampaignUpdate(
@@ -142,6 +146,8 @@ contract Crowdfunding is ReentrancyGuard {
             withdrawn:    false,
             exists:       true
         });
+
+        _campaignsByCreator[msg.sender].push(id);
 
         emit CampaignCreated(
             id,
@@ -330,6 +336,19 @@ contract Crowdfunding is ReentrancyGuard {
         return contributions[id][contributor];
     }
 
+    /// @notice Retourne tous les contributeurs et leurs montants actuels pour une campagne
+    /// @return addrs   Adresses des contributeurs
+    /// @return amounts Montants correspondants en wei (0 si remboursé)
+    function getContributions(
+        uint256 id
+    ) external view campaignExists(id) returns (address[] memory addrs, uint256[] memory amounts) {
+        addrs = _contributors[id];
+        amounts = new uint256[](addrs.length);
+        for (uint256 i = 0; i < addrs.length; i++) {
+            amounts[i] = contributions[id][addrs[i]];
+        }
+    }
+
     /// @notice Retourne le pourcentage de progression d'une campagne (0-100)
     function getProgress(
         uint256 id
@@ -419,6 +438,144 @@ contract Crowdfunding is ReentrancyGuard {
         uint256 index = 0;
         for (uint256 i = 0; i < campaignCount; i++) {
             if (campaigns[i].exists && campaigns[i].category == category) {
+                ids[index++] = i;
+            }
+        }
+        return ids;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // NOUVELLES FONCTIONS D'ÉCRITURE
+    // ─────────────────────────────────────────────────────────────
+
+    /// @notice Prolonge la deadline d'une campagne active (créateur uniquement)
+    /// @param id           Identifiant de la campagne
+    /// @param extraSeconds Durée supplémentaire en secondes (max 30 jours)
+    function extendDeadline(
+        uint256 id,
+        uint256 extraSeconds
+    ) external campaignExists(id) onlyCreator(id) {
+        Campaign storage c = campaigns[id];
+        require(block.timestamp < c.deadline, "Campagne deja terminee");
+        require(extraSeconds > 0,             "Duree supplementaire nulle");
+        require(extraSeconds <= 30 days,      "Extension max 30 jours");
+
+        c.deadline += extraSeconds;
+        emit DeadlineExtended(id, msg.sender, c.deadline);
+    }
+
+    /// @notice Modifie description et image d'une campagne sans contributeurs (créateur uniquement)
+    /// @param id          Identifiant de la campagne
+    /// @param description Nouvelle description (max 1000 caractères)
+    /// @param imageIPFS   Nouveau CID IPFS (max 100 caractères)
+    function updateCampaignMeta(
+        uint256 id,
+        string calldata description,
+        string calldata imageIPFS
+    ) external campaignExists(id) onlyCreator(id) {
+        Campaign storage c = campaigns[id];
+        require(c.amountRaised == 0,                   "Modification impossible apres contributions");
+        require(bytes(description).length <= 1000,     "Description trop longue");
+        require(bytes(imageIPFS).length <= 100,        "CID IPFS invalide");
+
+        c.description = description;
+        c.imageIPFS   = imageIPFS;
+        emit CampaignMetaUpdated(id, msg.sender);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // NOUVELLES FONCTIONS DE LECTURE
+    // ─────────────────────────────────────────────────────────────
+
+    /// @notice Indique si une adresse a contribué à une campagne
+    function hasContributed(uint256 id, address addr) external view returns (bool) {
+        return _hasContributed[id][addr];
+    }
+
+    /// @notice Retourne les IDs de toutes les campagnes créées par une adresse
+    function getCampaignsByCreator(address creator) external view returns (uint256[] memory) {
+        return _campaignsByCreator[creator];
+    }
+
+    /// @notice Statistiques globales de la plateforme
+    /// @return total       Nombre total de campagnes créées
+    /// @return active      Nombre de campagnes actuellement actives
+    /// @return totalRaised Total des fonds levés en wei (toutes campagnes)
+    function getGlobalStats() external view returns (
+        uint256 total,
+        uint256 active,
+        uint256 totalRaised
+    ) {
+        total = campaignCount;
+        for (uint256 i = 0; i < campaignCount; i++) {
+            Campaign storage c = campaigns[i];
+            if (c.exists && block.timestamp < c.deadline) active++;
+            totalRaised += c.amountRaised;
+        }
+    }
+
+    /// @notice Récupère plusieurs campagnes en un seul appel RPC
+    /// @param ids Tableau d'identifiants de campagnes
+    function getCampaignBatch(
+        uint256[] calldata ids
+    ) external view returns (Campaign[] memory result) {
+        result = new Campaign[](ids.length);
+        for (uint256 i = 0; i < ids.length; i++) {
+            result[i] = campaigns[ids[i]];
+        }
+    }
+
+    /// @notice Retourne les top N contributeurs triés par montant décroissant
+    /// @param id Identifiant de la campagne
+    /// @param n  Nombre de contributeurs (0 = tous)
+    function getTopContributors(
+        uint256 id,
+        uint256 n
+    ) external view campaignExists(id) returns (address[] memory addrs, uint256[] memory amounts) {
+        address[] memory allAddrs   = _contributors[id];
+        uint256   len               = allAddrs.length;
+        uint256[] memory allAmounts = new uint256[](len);
+
+        for (uint256 i = 0; i < len; i++) {
+            allAmounts[i] = contributions[id][allAddrs[i]];
+        }
+
+        // Tri à bulles décroissant (view — pas de coût gas hors chaîne)
+        for (uint256 i = 0; i < len; i++) {
+            for (uint256 j = i + 1; j < len; j++) {
+                if (allAmounts[j] > allAmounts[i]) {
+                    (allAmounts[i], allAmounts[j]) = (allAmounts[j], allAmounts[i]);
+                    (allAddrs[i],   allAddrs[j])   = (allAddrs[j],   allAddrs[i]);
+                }
+            }
+        }
+
+        uint256 resultLen = (n == 0 || n > len) ? len : n;
+        addrs   = new address[](resultLen);
+        amounts = new uint256[](resultLen);
+        for (uint256 i = 0; i < resultLen; i++) {
+            addrs[i]   = allAddrs[i];
+            amounts[i] = allAmounts[i];
+        }
+    }
+
+    /// @notice Retourne les IDs de campagnes actives filtrées par catégorie
+    /// @param category Index de catégorie (0-5)
+    function getActiveCampaignsByCategory(
+        uint8 category
+    ) external view returns (uint256[] memory) {
+        uint256 count = 0;
+        for (uint256 i = 0; i < campaignCount; i++) {
+            if (campaigns[i].exists && campaigns[i].category == category
+                && block.timestamp < campaigns[i].deadline) {
+                count++;
+            }
+        }
+        uint256[] memory ids = new uint256[](count);
+        uint256 index = 0;
+        for (uint256 i = 0; i < campaignCount; i++) {
+            if (campaigns[i].exists && campaigns[i].category == category
+                && block.timestamp < campaigns[i].deadline) {
                 ids[index++] = i;
             }
         }

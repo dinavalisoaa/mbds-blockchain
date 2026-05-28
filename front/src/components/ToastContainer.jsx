@@ -26,7 +26,7 @@ export default function ToastContainer() {
                   rel="noopener noreferrer"
                   className="toast-link"
                 >
-                  Voir sur Etherscan ↗
+                  VIEW_ON_ETHERSCAN ↗
                 </a>
               )}
             </div>

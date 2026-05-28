@@ -1,22 +1,15 @@
 const LABELS = {
-  active:    'Active',
-  success:   'Succès',
-  failed:    'Échouée',
-  cancelled: 'Annulée',
-};
-
-const ICONS = {
-  active:    'ti-clock',
-  success:   'ti-circle-check',
-  failed:    'ti-circle-x',
-  cancelled: 'ti-ban',
+  active:    'ACTIVE',
+  success:   'SUCCESS',
+  failed:    'FAILED',
+  cancelled: 'CANCELLED',
+  pending:   'PENDING_FINAL',
 };
 
 export default function Badge({ status }) {
   return (
     <span className={`badge ${status}`}>
-      <i className={`ti ${ICONS[status] ?? 'ti-help-circle'}`} />
-      {' '}{LABELS[status] ?? status}
+      {LABELS[status] ?? status}
     </span>
   );
 }
