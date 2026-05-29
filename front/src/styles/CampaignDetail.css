@@ -1,0 +1,109 @@
+/* ── CampaignDetail.css ───────────────────────────────────────
+   Complement to index.css for the CampaignDetail page.
+   Import AFTER index.css — adds only what is genuinely absent.
+─────────────────────────────────────────────────────────────── */
+
+/* Outer page wrapper — not defined in index.css */
+.campaign-detail {
+  padding-top: 1.5rem;
+}
+
+/* MAX button — positioned inside .input-suffix-wrap, left of "ETH" label.
+   index.css gives the input 110px right padding:
+     right 0–10px  → gap
+     right 10–40px → "ETH" label  (~30px)
+     right 40–44px → gap
+     right 44–88px → MAX button   (~44px)
+   All fits cleanly inside the 110px clearance.                */
+.fiche-max-btn {
+  position: absolute;
+  right: 44px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--surface);
+  border: 1px solid var(--border-hi);
+  border-radius: var(--radius-xs);
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+  font-family: inherit;
+  text-transform: uppercase;
+}
+.fiche-max-btn:hover:not(:disabled) {
+  color: var(--green);
+  border-color: var(--green-border);
+  background: var(--green-dim);
+}
+.fiche-max-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Cap notice — shown when typed amount exceeds remaining goal */
+.fiche-cap-notice {
+  font-size: 10px;
+  color: var(--green);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* Cancel warning — red notice above the cancel button */
+.fiche-cancel-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--red);
+  background: var(--red-dim);
+  border: 1px solid var(--red-border);
+  border-radius: var(--radius-xs);
+  padding: 9px 11px;
+  margin-bottom: 8px;
+  line-height: 1.5;
+  letter-spacing: 0.03em;
+}
+
+/* Danger CTA — red outline variant of .detail-cta-btn */
+.detail-cta-btn--danger {
+  background: transparent;
+  color: var(--red);
+  border: 1px solid var(--red-border);
+}
+.detail-cta-btn--danger:hover:not(:disabled) {
+  background: var(--red-dim);
+  border-color: var(--red);
+}
+
+/* Share link row — spans both columns of .fiche-info grid */
+.fiche-share-row {
+  grid-column: 1 / -1;     /* span 58% + 42% columns */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  margin-top: 4px;          /* small gap after fiche-meta-grid */
+}
+.fiche-share-url {
+  flex: 1;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fiche-share-url em {
+  color: var(--text);
+  font-style: normal;
+}
