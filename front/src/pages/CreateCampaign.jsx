@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { txCreateCampaign } from '../services/transactions.js';
 import { uploadToPinata } from '../services/pinata.js';
@@ -6,7 +6,11 @@ import { useTx } from '../hooks/useTx.js';
 import { useToast } from '../context/ToastContext.jsx';
 import { CATEGORIES, TX_LABELS } from '../constants.js';
 import { Badge } from '../components/ui/index.js';
+import '../styles/CreateCampaign.css';
 
+/* ─────────────────────────────────────────────────────────────
+   Helpers
+───────────────────────────────────────────────────────────── */
 const EMPTY = { title: '', desc: '', category: '0', goal: '', days: '' };
 
 const todayFormatted = () => {
@@ -20,11 +24,53 @@ const getDeadlineISO = days => {
   return d.toISOString().split('T')[0];
 };
 
+/* ─────────────────────────────────────────────────────────────
+   Image upload sub-component
+───────────────────────────────────────────────────────────── */
+function ImageUpload({ preview, onFile, onClear }) {
+  const ref = useRef();
+
+  const handleDrop = useCallback(e => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file?.type.startsWith('image/')) onFile(file);
+  }, [onFile]);
+
+  if (preview) {
+    return (
+      <div className="upload-preview-wrap">
+        <img src={preview} alt="Campaign preview" />
+        <button className="upload-remove-btn" onClick={onClear} type="button">
+          <i className="ti ti-x" /> REMOVE
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="upload-zone"
+      onClick={() => ref.current.click()}
+      onDragOver={e => e.preventDefault()}
+      onDrop={handleDrop}
+      role="button" tabIndex={0}
+      onKeyDown={e => e.key === 'Enter' && ref.current.click()}
+    >
+      <i className="ti ti-photo-up" />
+      <span>Drop image or <strong>BROWSE_FILE</strong></span>
+      <input ref={ref} type="file" accept="image/*"
+        onChange={e => e.target.files[0] && onFile(e.target.files[0])} />
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   CreateCampaign page
+───────────────────────────────────────────────────────────── */
 export default function CreateCampaign({ wallet }) {
   const runTx = useTx();
   const { add: addToast } = useToast();
   const navigate = useNavigate();
-  const fileRef = useRef();
 
   const [fields,     setFields]     = useState(EMPTY);
   const [imageFile,  setImageFile]  = useState(null);
@@ -35,30 +81,26 @@ export default function CreateCampaign({ wallet }) {
 
   const set = key => e => setFields(f => ({ ...f, [key]: e.target.value }));
 
-  const handleFile = e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    console.log('[CREATE] File selected:', file.name, file.type, file.size, 'bytes');
+  const handleFile = useCallback(file => {
     setImageFile(file);
     setPreview(URL.createObjectURL(file));
-  };
+  }, []);
+
+  const handleClearImage = useCallback(() => {
+    setImageFile(null);
+    setPreview(null);
+  }, []);
 
   const handleSubmit = async () => {
-    console.log('[CREATE] Submit clicked — wallet:', wallet?.connected, 'fields:', fields);
-    if (!wallet.connected) { console.warn('[CREATE] Wallet not connected'); return; }
+    if (!wallet.connected) return;
     setLoading(true);
     try {
       let cid = '';
       if (imageFile) {
-        console.log('[CREATE] Uploading to Pinata...', imageFile.name);
-        setLoadingMsg('UPLOADING_PHOTO...');
+        setLoadingMsg('UPLOADING_ASSET...');
         cid = await uploadToPinata(imageFile);
-        console.log('[CREATE] Pinata upload OK — CID:', cid);
-      } else {
-        console.log('[CREATE] No image — skipping upload');
       }
-      console.log('[CREATE] Sending tx — title:', fields.title, 'goal:', fields.goal, 'days:', fields.days, 'cid:', cid);
-      setLoadingMsg('CREATING_CAMPAIGN...');
+      setLoadingMsg('DEPLOYING_CONTRACT...');
       const receipt = await runTx(
         () => txCreateCampaign(
           fields.title, fields.desc, cid,
@@ -67,14 +109,17 @@ export default function CreateCampaign({ wallet }) {
         ),
         TX_LABELS.createCampaign
       );
-      console.log('[CREATE] Tx receipt:', receipt);
-      console.log('[CREATE] Campaign ID:', receipt?.campaignId);
       const newId = receipt?.campaignId;
       navigate(newId != null ? `/campaign/${newId}` : '/');
     } catch (e) {
-      console.error('[CREATE] Error:', e);
-      addToast({ type: 'error', message: e?.reason || e?.shortMessage || e?.message || 'Erreur inattendue' });
-    } finally { setLoading(false); setLoadingMsg(''); }
+      addToast({
+        type: 'error',
+        message: e?.reason || e?.shortMessage || e?.message || 'Unexpected error',
+      });
+    } finally {
+      setLoading(false);
+      setLoadingMsg('');
+    }
   };
 
   const handleCopy = () => {
@@ -83,12 +128,14 @@ export default function CreateCampaign({ wallet }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Live preview values
+  /* ── Live preview values ── */
   const previewTitle = fields.title  || 'UNNAMED_PROJECT';
   const previewDesc  = fields.desc   || 'Awaiting deployment parameters...';
   const previewGoal  = fields.goal   || '0.00';
   const previewDays  = fields.days   || '30';
   const previewCat   = CATEGORIES[parseInt(fields.category)] ?? 'TECHNOLOGY';
+
+  const canDeploy = wallet.connected && fields.title.trim() && fields.goal.trim() && !loading;
 
   return (
     <div className="campaign-detail">
@@ -98,19 +145,22 @@ export default function CreateCampaign({ wallet }) {
 
       <div className="detail-page">
 
-        {/* ── LEFT PANEL — Form ── */}
+        {/* ════════════════════════════════════════
+            LEFT — Form
+        ════════════════════════════════════════ */}
         <div className="detail-left">
+
           <div className="detail-panel-header">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
               <h1 className="detail-panel-title">INITIALIZE_CAMPAIGN</h1>
-              <span className="badge active">NEW</span>
+              <Badge status="active">NEW</Badge>
             </div>
             <p className="detail-panel-subtitle">
               Deploy new crowdfunding smart contract on Sepolia Testnet.
             </p>
           </div>
 
-          {/* Row 1: title + category */}
+          {/* Row 1 — title + category */}
           <div className="detail-field-grid">
             <div className="detail-field">
               <label>CAMPAIGN_TITLE</label>
@@ -134,8 +184,8 @@ export default function CreateCampaign({ wallet }) {
             </div>
           </div>
 
-          {/* Row 2: description textarea */}
-          <div className="detail-field" style={{ marginBottom: '1rem' }}>
+          {/* Row 2 — description */}
+          <div className="detail-field">
             <label>MANIFESTO_DESCRIPTION</label>
             <textarea
               rows={5}
@@ -145,7 +195,7 @@ export default function CreateCampaign({ wallet }) {
             />
           </div>
 
-          {/* Row 3: goal + staking period */}
+          {/* Row 3 — goal + duration */}
           <div className="detail-field-grid">
             <div className="detail-field">
               <label>TARGET_GOAL (ETH)</label>
@@ -170,63 +220,57 @@ export default function CreateCampaign({ wallet }) {
             </div>
           </div>
 
-          {/* Row 4: image upload */}
-          <div className="detail-field" style={{ marginBottom: '1.25rem' }}>
+          {/* Row 4 — image */}
+          <div className="detail-field">
             <label>VISUAL_ASSET</label>
-            <input
-              ref={fileRef} type="file" accept="image/*"
-              onChange={handleFile}
-              style={{ cursor: 'pointer' }}
+            <ImageUpload
+              preview={preview}
+              onFile={handleFile}
+              onClear={handleClearImage}
             />
-            {preview && (
-              <img
-                src={preview} alt="preview"
-                style={{
-                  marginTop: '0.5rem', width: '100%', maxHeight: 120,
-                  objectFit: 'cover', borderRadius: 4, border: '1px solid var(--border)',
-                }}
-              />
-            )}
           </div>
 
           {/* CTA */}
-          <div className="detail-action-section" style={{ marginTop: 0 }}>
+          <div className="detail-action-section">
             <button
               className="detail-cta-btn"
-              disabled={!wallet.connected || loading || !fields.title || !fields.goal}
+              disabled={!canDeploy}
               onClick={handleSubmit}
             >
               {loading
                 ? <i className="ti ti-loader-2 spinning" />
-                : <i className="ti ti-rocket" />
-              }
+                : <i className="ti ti-rocket" />}
               {loading
-                ? loadingMsg || 'LOADING...'
-                : wallet.connected ? 'DECODE_AND_DEPLOY_CONTRACT' : 'CONNECT_WALLET_TO_DEPLOY'
-              }
+                ? (loadingMsg || 'LOADING...')
+                : wallet.connected
+                  ? 'DECODE_AND_DEPLOY_CONTRACT'
+                  : 'CONNECT_WALLET_TO_DEPLOY'}
             </button>
           </div>
         </div>
 
-        {/* ── RIGHT PANEL — Live preview ── */}
+        {/* ════════════════════════════════════════
+            RIGHT — Live preview
+        ════════════════════════════════════════ */}
         <div className="detail-right">
+
           <div className="preview-label-row">
             <span className="preview-label-dot" />
             LIVE_CONTRACT_PREVIEW
           </div>
 
-          {/* Preview card — mirrors CampaignCard layout */}
+          {/* Preview card */}
           <div className="detail-preview-card">
             <div style={{ position: 'relative' }}>
-              {preview ? (
-                <img src={preview} alt="preview" className="campaign-card-img" />
-              ) : (
-                <div className="campaign-card-img-placeholder">
-                  <i className="ti ti-photo-off" />
-                </div>
-              )}
+              {preview
+                ? <img src={preview} alt="preview" className="campaign-card-img" />
+                : (
+                  <div className="campaign-card-img-placeholder">
+                    <i className="ti ti-photo-off" />
+                  </div>
+                )
+              }
               <span className="campaign-card-cat-badge">CAT: {previewCat}</span>
-              {/* 0% funded progress bar */}
               <div className="preview-img-progress-track">
                 <div className="preview-img-progress-fill" style={{ width: '0%' }} />
               </div>
@@ -266,21 +310,20 @@ export default function CreateCampaign({ wallet }) {
             </div>
           </div>
 
-          {/* Deployment link box */}
+          {/* Deployment link */}
           <div className="contract-link-box">
             <div className="contract-link-label">DEPLOYMENT_LINK</div>
             <div className="contract-link-row">
               <i className="ti ti-link" style={{ color: 'var(--green)', flexShrink: 0 }} />
-              <span className="contract-link-url">
-                sepolia.ethfund.io/new-campaign
-              </span>
+              <span className="contract-link-url">sepolia.ethfund.io/new-campaign</span>
               <button className="contract-copy-btn" onClick={handleCopy} title={copied ? 'Copied!' : 'Copy'}>
-                <i className={`ti ${copied ? 'ti-check' : 'ti-copy'}`} />
+                <i className={`ti ${copied ? 'ti-check' : 'ti-copy'}`}
+                  style={{ color: copied ? 'var(--green)' : undefined }} />
               </button>
             </div>
           </div>
-        </div>
 
+        </div>
       </div>
     </div>
   );
