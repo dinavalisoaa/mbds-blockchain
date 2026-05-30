@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { fetchCampaignById, fetchCampaignEvents, fetchContributions } from '../services/campaigns.js';
-import { txContribute, txWithdraw, txRefund } from '../services/transactions.js';
+import { fetchCampaignById, fetchCampaignEvents } from '../services/campaigns.js';
+import { txContribute, txWithdraw, txRefund, txCancelCampaign } from '../services/transactions.js';
 import { useCountdown } from '../hooks/useCountdown.js';
 import { ipfsUrl } from '../services/pinata.js';
 import { useTx } from '../hooks/useTx.js';
 import { CATEGORIES, TX_LABELS } from '../constants.js';
 import { Badge, Spinner, EmptyState } from '../components/ui/index.js';
+import '../styles/CampaignDetail.css';
+import '../index.css';
 
 // ── Helpers ───────────────────────────────────────────────
 function timeAgo(ts) {
@@ -30,23 +32,6 @@ function SegmentedBar({ percent, status }) {
           style={{ background: i < filled ? color : 'var(--surface-3)' }}
         />
       ))}
-    </div>
-  );
-}
-
-// ── Countdown ─────────────────────────────────────────────
-function Countdown({ deadline, status }) {
-  const { display, isUrgent, done } = useCountdown(deadline);
-  if (status !== 'active') return (
-    <div className="fiche-countdown fiche-countdown--dim">
-      <span className="fiche-countdown-label">URGENCY_COUNTDOWN</span>
-      <span className="fiche-countdown-val">--:--:--:--</span>
-    </div>
-  );
-  return (
-    <div className={`fiche-countdown${isUrgent ? ' fiche-countdown--urgent' : ''}`}>
-      <span className="fiche-countdown-label">URGENCY_COUNTDOWN</span>
-      <span className="fiche-countdown-val">{done ? 'EXPIRED' : display}</span>
     </div>
   );
 }
@@ -92,14 +77,16 @@ export default function CampaignDetail({ wallet }) {
 
   const [campaign,        setCampaign]        = useState(null);
   const [events,          setEvents]          = useState([]);
-  const [contributors,    setContributors]    = useState([]);
   const [loading,         setLoading]         = useState(true);
   const [eventsLoading,   setEventsLoading]   = useState(true);
-  const [contribsLoading, setContribsLoading] = useState(true);
   const [error,           setError]           = useState(null);
   const [amount,          setAmount]          = useState('');
-  const [txLoading,       setTxLoading]       = useState(false);
+  const [loadingContrib,  setLoadingContrib]  = useState(false);
+  const [loadingWithdraw, setLoadingWithdraw] = useState(false);
+  const [loadingRefund,   setLoadingRefund]   = useState(false);
+  const [loadingCancel,   setLoadingCancel]   = useState(false);
   const [copied,          setCopied]          = useState(false);
+  const [copiedShare,     setCopiedShare]     = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -122,31 +109,28 @@ export default function CampaignDetail({ wallet }) {
     return () => { alive = false; };
   }, [id, campaign]);
 
-  useEffect(() => {
-    if (!campaign) return;
-    let alive = true;
-    setContribsLoading(true);
-    fetchContributions(id)
-      .then(list => { if (alive) setContributors(list); })
-      .catch(() => {})
-      .finally(() => { if (alive) setContribsLoading(false); });
-    return () => { alive = false; };
-  }, [id, campaign]);
-
-  const run = async (fn, labels) => {
-    setTxLoading(true);
+  const run = async (fn, labels, setLoader) => {
+    setLoader(true);
     try {
       await runTx(fn, labels);
       const c = await fetchCampaignById(id);
       setCampaign(c);
     } catch { /* toast */ }
-    finally { setTxLoading(false); }
+    finally { setLoader(false); }
   };
 
   const handleCopy = text => {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCopyShare = (title, progress) => {
+    const url = `${window.location.origin}/mbds-blockchain/#/campaign/${id}`;
+    const text = `${url}`;
+    navigator.clipboard.writeText(text);
+    setCopiedShare(true);
+    setTimeout(() => setCopiedShare(false), 2000);
   };
 
   const backLink = (
@@ -169,6 +153,13 @@ export default function CampaignDetail({ wallet }) {
   const imgUrl      = ipfsUrl(c.imageIPFS);
   const isCreator   = wallet?.address?.toLowerCase() === c.creator.toLowerCase();
   const etherscanCreator = `https://sepolia.etherscan.io/address/${c.creator}`;
+
+  // Contribute cap logic
+  const remaining      = Math.max(0, parseFloat(c.goalEth) - parseFloat(c.amountRaisedEth));
+  const parsedAmount   = parseFloat(amount);
+  const hasAmount      = amount !== '' && !isNaN(parsedAmount) && parsedAmount > 0;
+  const effectiveAmt   = hasAmount ? Math.round(Math.min(parsedAmount, remaining) * 1e6) / 1e6 : 0;
+  const isCapped       = hasAmount && parsedAmount > remaining;
 
   const dd = new Date(Number(c.createdAt) * 1000);
   const createdDate = `${dd.getFullYear()}.${String(dd.getMonth()+1).padStart(2,'0')}.${String(dd.getDate()).padStart(2,'0')}`;
@@ -245,58 +236,93 @@ export default function CampaignDetail({ wallet }) {
             </div>
           )}
 
-          {/* Contribute */}
-          {c.status === 'active' && wallet?.connected && (
+          {/* Contribute — active + connected */}
+          {c.status === 'active' && wallet?.connected && !isCreator && (
             <div className="fiche-contribute">
               <label className="fiche-contribute-label">CONTRIBUTE_AMOUNT</label>
               <div className="fiche-contribute-row">
-                <div className="input-suffix-wrap" style={{ flex: 1 }}>
+                <div className="input-suffix-wrap" style={{ flex: 1, position: 'relative' }}>
                   <input
-                    type="number" min="0.001" step="0.001" placeholder="0.00"
-                    value={amount} onChange={e => setAmount(e.target.value)}
+                    type="number" min="0.000001" step="0.001" placeholder="0.00"
+                    value={amount}
+                    onChange={e => { const v = e.target.value; if (v === '' || /^\d*\.?\d*$/.test(v)) setAmount(v); }}
+                    disabled={loadingContrib}
                   />
                   <span className="input-suffix">ETH</span>
+                  <button
+                    className="fiche-max-btn"
+                    type="button"
+                    onClick={() => setAmount(String(remaining))}
+                    disabled={loadingContrib}
+                  >MAX</button>
                 </div>
                 <button
                   className="fiche-contribute-btn"
-                  disabled={txLoading || !amount}
-                  onClick={() => run(() => txContribute(c.id, amount), TX_LABELS.contribute)}
+                  disabled={loadingContrib || !hasAmount}
+                  onClick={() => run(() => txContribute(c.id, effectiveAmt), TX_LABELS.contribute, setLoadingContrib)}
                 >
-                  {txLoading ? <i className="ti ti-loader-2 spinning" /> : null}
+                  {loadingContrib ? <i className="ti ti-loader-2 spinning" /> : null}
                   CONTRIBUTE_ETH
                 </button>
               </div>
+              {isCapped && (
+                <p className="fiche-cap-notice">
+                  <i className="ti ti-arrows-minimize" />
+                  Capped to <strong>{effectiveAmt} ETH</strong> — remaining goal.
+                </p>
+              )}
             </div>
           )}
 
+          {/* Contribute — active + not connected */}
           {c.status === 'active' && !wallet?.connected && (
             <button className="detail-cta-btn" disabled style={{ marginTop: '1rem' }}>
               CONNECT_WALLET_TO_CONTRIBUTE
             </button>
           )}
 
+          {/* Cancel — active + creator + nothing raised yet */}
+          {c.status === 'active' && isCreator && c.amountRaised === 0n && (
+            <div style={{ marginTop: '1rem' }}>
+              <p className="fiche-cancel-notice">
+                <i className="ti ti-alert-triangle" /> No contributions yet — cancellation is permanent.
+              </p>
+              <button
+                className="detail-cta-btn detail-cta-btn--danger"
+                disabled={loadingCancel}
+                onClick={() => run(() => txCancelCampaign(c.id), TX_LABELS.cancelCampaign, setLoadingCancel)}
+              >
+                {loadingCancel ? <i className="ti ti-loader-2 spinning" /> : <i className="ti ti-x" />}
+                CANCEL_CAMPAIGN
+              </button>
+            </div>
+          )}
+
+          {/* Withdraw — success + creator + not yet withdrawn */}
           {c.status === 'success' && isCreator && !c.withdrawn && (
             <button
               className="detail-cta-btn" style={{ marginTop: '1rem' }}
-              disabled={txLoading}
-              onClick={() => run(() => txWithdraw(c.id), TX_LABELS.withdraw)}
+              disabled={loadingWithdraw}
+              onClick={() => run(() => txWithdraw(c.id), TX_LABELS.withdraw, setLoadingWithdraw)}
             >
-              {txLoading ? <i className="ti ti-loader-2 spinning" /> : <i className="ti ti-download" />}
+              {loadingWithdraw ? <i className="ti ti-loader-2 spinning" /> : <i className="ti ti-download" />}
               WITHDRAW_FUNDS ({c.amountRaisedEth} ETH)
             </button>
           )}
 
-          {c.status === 'failed' && c.myContrib > 0n && (
+          {/* Refund — failed OR cancelled + contributor */}
+          {(c.status === 'failed' || c.status === 'cancelled') && c.myContrib > 0n && (
             <button
               className="detail-cta-btn detail-cta-btn--ghost" style={{ marginTop: '1rem' }}
-              disabled={txLoading}
-              onClick={() => run(() => txRefund(c.id), TX_LABELS.refund)}
+              disabled={loadingRefund}
+              onClick={() => run(() => txRefund(c.id), TX_LABELS.refund, setLoadingRefund)}
             >
-              {txLoading ? <i className="ti ti-loader-2 spinning" /> : <i className="ti ti-receipt-refund" />}
+              {loadingRefund ? <i className="ti ti-loader-2 spinning" /> : <i className="ti ti-receipt-refund" />}
               CLAIM_REFUND ({c.myContribEth} ETH)
             </button>
           )}
 
+          {/* Already withdrawn */}
           {c.status === 'success' && c.withdrawn && (
             <div className="detail-withdrawn-note" style={{ marginTop: '1rem' }}>
               <i className="ti ti-circle-check" /> FUNDS_WITHDRAWN
@@ -348,6 +374,22 @@ export default function CampaignDetail({ wallet }) {
             <span className="fiche-meta-label">CHAIN</span>
             <span className="fiche-meta-val fiche-meta-val--green">SEPOLIA_ETH</span>
           </div>
+        </div>
+
+        {/* Share link */}
+        <div className="fiche-share-row">
+          <i className="ti ti-link" style={{ color: 'var(--green)', flexShrink: 0 }} />
+          <span className="fiche-share-url">
+            sepolia.ethfund.io/campaign/{id} · <em>{c.title}</em> · {c.progress}% funded
+          </span>
+          <button
+            className="contract-copy-btn"
+            onClick={() => handleCopyShare(c.title, c.progress)}
+            title={copiedShare ? 'Copied!' : 'Copy share link'}
+          >
+            <i className={`ti ${copiedShare ? 'ti-check' : 'ti-copy'}`}
+              style={{ color: copiedShare ? 'var(--green)' : undefined }} />
+          </button>
         </div>
       </div>
 
