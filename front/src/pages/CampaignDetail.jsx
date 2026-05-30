@@ -1,23 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { fetchCampaignById, fetchCampaignEvents } from '../services/campaigns.js';
-import { txContribute, txWithdraw, txRefund, txCancelCampaign } from '../services/transactions.js';
+import { fetchCampaignById, fetchContributions } from '../services/campaigns.js';
+import { txContribute, txWithdraw, txRefund, txCancelCampaign, txUpdateCampaignMeta, txExtendDeadline } from '../services/transactions.js';
 import { useCountdown } from '../hooks/useCountdown.js';
-import { ipfsUrl } from '../services/pinata.js';
+import { ipfsUrl, uploadToPinata } from '../services/pinata.js';
 import { useTx } from '../hooks/useTx.js';
 import { CATEGORIES, TX_LABELS } from '../constants.js';
 import { Badge, Spinner, EmptyState } from '../components/ui/index.js';
 import '../styles/CampaignDetail.css';
 import '../index.css';
 
-// ── Helpers ───────────────────────────────────────────────
-function timeAgo(ts) {
-  const diff = Math.floor(Date.now() / 1000) - Number(ts);
-  if (diff < 60)    return `${diff}S_AGO`;
-  if (diff < 3600)  return `${Math.floor(diff / 60)}M_AGO`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}H_AGO`;
-  return `${Math.floor(diff / 86400)}D_AGO`;
-}
 
 const SEGMENTS = 20;
 function SegmentedBar({ percent, status }) {
@@ -36,39 +28,6 @@ function SegmentedBar({ percent, status }) {
   );
 }
 
-// ── TX row ────────────────────────────────────────────────
-const TX_CONFIG = {
-  contribution:  { label: 'CONTRIBUTION',  color: 'var(--green)',      sign: '+' },
-  withdrawal:    { label: 'WITHDRAWAL',    color: 'var(--red)',        sign: '-' },
-  refund:        { label: 'REFUND',        color: 'var(--text-muted)', sign: ''  },
-  excess_refund: { label: 'EXCESS_REFUND', color: 'var(--text-dim)',   sign: ''  },
-  cancelled:     { label: 'CANCELLED',     color: 'var(--red)',        sign: ''  },
-};
-
-function TxRow({ event: e }) {
-  const cfg = TX_CONFIG[e.type] ?? TX_CONFIG.contribution;
-  const short = a => `${a.slice(0, 6)}...${a.slice(-4)}`;
-  return (
-    <div className="fiche-tx-row">
-      <span className="fiche-tx-type">
-        <span className="fiche-tx-dot" style={{ background: cfg.color }} />
-        {cfg.label}
-      </span>
-      <span className="fiche-tx-addr">{short(e.actor)}</span>
-      <span className="fiche-tx-amount" style={{ color: cfg.color }}>
-        {e.amountEth ? `${cfg.sign}${e.amountEth}` : '—'}
-      </span>
-      <span className="fiche-tx-time">{e.timestamp ? timeAgo(e.timestamp) : '—'}</span>
-      <a
-        className="fiche-tx-verify"
-        href={`https://sepolia.etherscan.io/tx/${e.txHash}`}
-        target="_blank" rel="noopener noreferrer"
-      >
-        <i className="ti ti-external-link" />
-      </a>
-    </div>
-  );
-}
 
 // ── Page ──────────────────────────────────────────────────
 export default function CampaignDetail({ wallet }) {
@@ -76,9 +35,7 @@ export default function CampaignDetail({ wallet }) {
   const runTx = useTx();
 
   const [campaign,        setCampaign]        = useState(null);
-  const [events,          setEvents]          = useState([]);
   const [loading,         setLoading]         = useState(true);
-  const [eventsLoading,   setEventsLoading]   = useState(true);
   const [error,           setError]           = useState(null);
   const [amount,          setAmount]          = useState('');
   const [loadingContrib,  setLoadingContrib]  = useState(false);
@@ -87,6 +44,16 @@ export default function CampaignDetail({ wallet }) {
   const [loadingCancel,   setLoadingCancel]   = useState(false);
   const [copied,          setCopied]          = useState(false);
   const [copiedShare,     setCopiedShare]     = useState(false);
+  const [contributors,    setContributors]    = useState([]);
+  const [contribLoading,  setContribLoading]  = useState(false);
+  const [editOpen,        setEditOpen]        = useState(false);
+  const [editDesc,        setEditDesc]        = useState('');
+  const [editImageFile,   setEditImageFile]   = useState(null);
+  const [editPreview,     setEditPreview]     = useState(null);
+  const [editExtraDays,   setEditExtraDays]   = useState('');
+  const [loadingMeta,     setLoadingMeta]     = useState(false);
+  const [loadingDeadline, setLoadingDeadline] = useState(false);
+  const editFileRef = useRef(null);
 
   useEffect(() => {
     let alive = true;
@@ -101,11 +68,11 @@ export default function CampaignDetail({ wallet }) {
   useEffect(() => {
     if (!campaign) return;
     let alive = true;
-    setEventsLoading(true);
-    fetchCampaignEvents(id)
-      .then(evs => { if (alive) setEvents(evs); })
+    setContribLoading(true);
+    fetchContributions(id)
+      .then(contribs => { if (alive) setContributors(contribs); })
       .catch(() => {})
-      .finally(() => { if (alive) setEventsLoading(false); });
+      .finally(() => { if (alive) setContribLoading(false); });
     return () => { alive = false; };
   }, [id, campaign]);
 
@@ -151,7 +118,8 @@ export default function CampaignDetail({ wallet }) {
 
   const c = campaign;
   const imgUrl      = ipfsUrl(c.imageIPFS);
-  const isCreator   = wallet?.address?.toLowerCase() === c.creator.toLowerCase();
+  const isCreator   = !!(wallet?.connected && wallet?.address &&
+                        wallet.address.toLowerCase() === c.creator.toLowerCase());
   const etherscanCreator = `https://sepolia.etherscan.io/address/${c.creator}`;
 
   // Contribute cap logic
@@ -284,6 +252,21 @@ export default function CampaignDetail({ wallet }) {
             </button>
           )}
 
+          {/* Edit — active + creator */}
+          {c.status === 'active' && isCreator && (
+            <button
+              className="detail-cta-btn detail-cta-btn--ghost"
+              style={{ marginTop: '1rem' }}
+              onClick={() => {
+                if (!editOpen) setEditDesc(c.description);
+                setEditOpen(true);
+                setTimeout(() => document.getElementById('edit-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+              }}
+            >
+              <i className="ti ti-edit" /> EDIT_CAMPAIGN
+            </button>
+          )}
+
           {/* Cancel — active + creator + nothing raised yet */}
           {c.status === 'active' && isCreator && c.amountRaised === 0n && (
             <div style={{ marginTop: '1rem' }}>
@@ -402,31 +385,199 @@ export default function CampaignDetail({ wallet }) {
         </div>
       </div>
 
-      {/* ── EVENT LOG ─────────────────────────────────────── */}
+      {/* ── EDIT PANEL (creator + active only) ───────────── */}
+      {isCreator && c.status === 'active' && (
+        <div className="fiche-edit-panel" id="edit-panel">
+          <button className="fiche-edit-toggle" onClick={() => {
+            if (!editOpen) { setEditDesc(c.description); setEditPreview(ipfsUrl(c.imageIPFS)); }
+            setEditOpen(o => !o);
+          }}>
+            <i className={`ti ${editOpen ? 'ti-chevron-up' : 'ti-edit'}`} />
+            {editOpen ? 'CLOSE_EDITOR' : 'EDIT_CAMPAIGN'}
+          </button>
+
+          {editOpen && (
+            <div className="fiche-edit-body">
+
+              {/* ── Meta edit — locked once contributions exist ── */}
+              {c.amountRaised === 0n ? (
+                <>
+                  <div className="fiche-edit-section-label">CAMPAIGN_INFO</div>
+
+                  <div className="detail-field">
+                    <label>DESCRIPTION</label>
+                    <textarea
+                      value={editDesc}
+                      maxLength={1000}
+                      onChange={e => setEditDesc(e.target.value)}
+                      rows={4}
+                      placeholder="Description de la campagne..."
+                    />
+                  </div>
+
+                  <div className="detail-field">
+                    <label>IMAGE</label>
+                    {editPreview ? (
+                      <div className="upload-preview-wrap">
+                        <img src={editPreview} alt="preview" />
+                        <button className="upload-remove-btn" onClick={() => {
+                          setEditPreview(null);
+                          setEditImageFile(null);
+                          if (editFileRef.current) editFileRef.current.value = '';
+                        }}>
+                          <i className="ti ti-x" /> REMOVE
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="upload-zone">
+                        <i className="ti ti-photo-up" />
+                        <span><strong>Choisir une image</strong> ou glisser-déposer</span>
+                        <span style={{ fontSize: 10 }}>PNG, JPG, GIF — max 10 MB</span>
+                        <input
+                          ref={editFileRef} type="file" accept="image/*"
+                          onChange={e => {
+                            const f = e.target.files[0];
+                            if (f) { setEditImageFile(f); setEditPreview(URL.createObjectURL(f)); }
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
+
+                  <button
+                    className="detail-cta-btn"
+                    disabled={loadingMeta}
+                    onClick={async () => {
+                      setLoadingMeta(true);
+                      try {
+                        let cid = c.imageIPFS;
+                        if (editImageFile) cid = await uploadToPinata(editImageFile);
+                        await runTx(
+                          () => txUpdateCampaignMeta(c.id, editDesc, cid),
+                          { pending: 'UPDATING_CAMPAIGN...', success: 'CAMPAIGN_UPDATED' }
+                        );
+                        const updated = await fetchCampaignById(id);
+                        setCampaign(updated);
+                        setEditImageFile(null);
+                        setEditOpen(false);
+                        if (editFileRef.current) editFileRef.current.value = '';
+                      } catch { /* toast */ }
+                      finally { setLoadingMeta(false); }
+                    }}
+                  >
+                    {loadingMeta
+                      ? <><i className="ti ti-loader-2 spinning" /> SAVING...</>
+                      : <><i className="ti ti-device-floppy" /> SAVE_CHANGES</>
+                    }
+                  </button>
+                </>
+              ) : (
+                <div className="fiche-edit-meta-locked">
+                  <i className="ti ti-lock" />
+                  DESCRIPTION &amp; IMAGE verrouillés — des contributions ont été reçues.
+                </div>
+              )}
+
+              {/* ── Extend deadline ─────────────────────────────── */}
+              <div className="fiche-edit-divider" />
+              <div className="fiche-edit-section-label">EXTEND_DEADLINE</div>
+
+              <div className="detail-field">
+                <label>JOURS SUPPLÉMENTAIRES (max 30)</label>
+                <div className="input-suffix-wrap">
+                  <input
+                    type="number" min="1" max="30" step="1"
+                    placeholder="7"
+                    value={editExtraDays}
+                    onChange={e => setEditExtraDays(e.target.value)}
+                  />
+                  <span className="input-suffix">DAYS</span>
+                </div>
+              </div>
+
+              <button
+                className="detail-cta-btn detail-cta-btn--ghost"
+                disabled={loadingDeadline || !editExtraDays}
+                onClick={async () => {
+                  setLoadingDeadline(true);
+                  try {
+                    await runTx(
+                      () => txExtendDeadline(c.id, editExtraDays),
+                      { pending: 'EXTENDING_DEADLINE...', success: 'DEADLINE_EXTENDED' }
+                    );
+                    const updated = await fetchCampaignById(id);
+                    setCampaign(updated);
+                    setEditExtraDays('');
+                  } catch { /* toast */ }
+                  finally { setLoadingDeadline(false); }
+                }}
+              >
+                {loadingDeadline
+                  ? <><i className="ti ti-loader-2 spinning" /> EXTENDING...</>
+                  : <><i className="ti ti-clock-plus" /> EXTEND_DEADLINE</>
+                }
+              </button>
+
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── CONTRIBUTORS ──────────────────────────────────── */}
       <div className="fiche-log">
         <div className="fiche-log-header">
-          <span className="fiche-log-title">ON-CHAIN_EVENT_LOG</span>
+          <span className="fiche-log-title">CONTRIBUTORS</span>
+          {contributors.length > 0 && (
+            <span className="fiche-log-tab-count">{contributors.length}</span>
+          )}
           <span className="fiche-log-realtime">
             <span className="fiche-live-dot" /> REAL-TIME
           </span>
         </div>
 
-        {/* Column headers */}
         <div className="fiche-tx-header">
-          <span>TX_TYPE</span>
+          <span>RANK</span>
           <span>ADDRESS</span>
           <span>AMOUNT_ETH</span>
-          <span>TIMESTAMP</span>
-          <span>VERIFY</span>
+          <span>SHARE_%</span>
         </div>
 
-        {eventsLoading
-          ? <div style={{ padding: '2rem 1rem' }}><Spinner label="LOADING_EVENTS..." /></div>
-          : events.length === 0
-            ? <EmptyState icon="ti-list" title="NO_TRANSACTIONS" subtitle="NO_CONTRIBUTIONS_YET." />
-            : events.map((e, i) => <TxRow key={i} event={e} />)
+        {contribLoading
+          ? <div style={{ padding: '2rem 1rem' }}><Spinner label="LOADING_CONTRIBUTORS..." /></div>
+          : contributors.length === 0
+            ? <EmptyState icon="ti-users" title="NO_CONTRIBUTORS" subtitle="NO_CONTRIBUTIONS_YET." />
+            : [...contributors]
+                .sort((a, b) => (b.amount > a.amount ? 1 : -1))
+                .map((contrib, i) => (
+                  <ContribRow
+                    key={contrib.address}
+                    rank={i + 1}
+                    contrib={contrib}
+                    totalRaised={c.amountRaised}
+                  />
+                ))
         }
       </div>
+    </div>
+  );
+}
+
+// Contributor row
+function ContribRow({ rank, contrib, totalRaised }) {
+  const share = totalRaised > 0n
+    ? ((Number(contrib.amount) / Number(totalRaised)) * 100).toFixed(1)
+    : '0.0';
+  return (
+    <div className="fiche-tx-row">
+      <span className="fiche-tx-type">
+        <span className="fiche-tx-dot" style={{ background: 'var(--green)' }} />
+        #{rank}
+      </span>
+      <span className="fiche-tx-addr">{contrib.shortAddr}</span>
+      <span className="fiche-tx-amount" style={{ color: 'var(--green)' }}>
+        +{contrib.amountEth}
+      </span>
+      <span className="fiche-tx-time">{share}%</span>
     </div>
   );
 }

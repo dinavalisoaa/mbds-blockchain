@@ -69,3 +69,16 @@ export async function txRefundAll(id) {
   const tx = await getSignedContract().refundAll(id);
   return tx.wait();
 }
+
+export async function txUpdateCampaignMeta(id, description, imageIPFS) {
+  const tx = await getSignedContract().updateCampaignMeta(id, description.trim(), imageIPFS.trim());
+  return tx.wait();
+}
+
+export async function txExtendDeadline(id, extraDays) {
+  if (!extraDays || +extraDays <= 0) throw new Error('Nombre de jours invalide');
+  if (+extraDays > 30) throw new Error('Extension maximale : 30 jours');
+  const extraSeconds = BigInt(Math.round(+extraDays * 86400));
+  const tx = await getSignedContract().extendDeadline(id, extraSeconds);
+  return tx.wait();
+}

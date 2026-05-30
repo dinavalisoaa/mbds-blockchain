@@ -2,15 +2,15 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "D:\\Study\\BlockChain\\mbds-blockchain\\contracts\\Crowdfunding.sol": {
-      "lastModificationDate": 1779826410362,
-      "contentHash": "a98a829a18f128bc710cf59faa3705d1",
+      "lastModificationDate": 1780145183975,
+      "contentHash": "cf088b8840436f1986a7cadb39c446d1",
       "sourceName": "contracts/Crowdfunding.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -48,7 +48,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1
           },
           "evmVersion": "paris",
           "outputSelection": {
@@ -86,7 +86,7 @@
         "settings": {
           "optimizer": {
             "enabled": true,
-            "runs": 200
+            "runs": 1
           },
           "evmVersion": "paris",
           "outputSelection": {
