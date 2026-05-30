@@ -8,12 +8,13 @@ import CampaignCard from '../components/CampaignCard.jsx';
 import { Alert, Spinner, EmptyState, Button } from '../components/ui/index.js';
 
 // ── Live TX Feed ─────────────────────────────────────────
-function LiveTxFeed({ campaigns }) {
-  if (!campaigns.length) return null;
+const TX_PAGE_SIZE = 5;
 
-  const recent = [...campaigns]
-    .sort((a, b) => Number(b.createdAt) - Number(a.createdAt))
-    .slice(0, 6);
+function LiveTxFeed({ campaigns }) {
+  const [titleFilter, setTitleFilter] = useState('');
+  const [txPage,      setTxPage]      = useState(1);
+
+  if (!campaigns.length) return null;
 
   const timeAgo = ts => {
     const diff = Math.floor(Date.now() / 1000) - Number(ts);
@@ -23,19 +24,95 @@ function LiveTxFeed({ campaigns }) {
     return `${Math.floor(diff / 86400)}D_AGO`;
   };
 
+  const sorted = [...campaigns].sort((a, b) => Number(b.createdAt) - Number(a.createdAt));
+
+  const isFiltered = titleFilter.trim() !== '';
+
+  const filtered = isFiltered
+    ? sorted.filter(c => c.title.toLowerCase().includes(titleFilter.toLowerCase()))
+    : sorted;
+
+  const totalPages = Math.ceil(filtered.length / TX_PAGE_SIZE);
+  const displayed  = isFiltered
+    ? filtered
+    : filtered.slice((txPage - 1) * TX_PAGE_SIZE, txPage * TX_PAGE_SIZE);
+
+  const handleTitleFilter = val => { setTitleFilter(val); setTxPage(1); };
+
   return (
     <div className="tx-feed">
+      {/* Header */}
       <div className="tx-feed-header">
         <span className="tx-feed-title">LIVE_TRANSACTION_FEED_SEPOLIA</span>
         <span className="tx-feed-syncing">SYNCING...</span>
+        <span className="tx-feed-total">TOTAL: {campaigns.length}_TX</span>
       </div>
-      {recent.map(c => (
-        <div key={c.id} className="tx-feed-row">
-          <span className="tx-feed-addr">{c.creatorShort}</span>
-          <span className="tx-feed-action">CAMPAIGN_CREATED: {c.title}</span>
-          <span className="tx-feed-time">{timeAgo(c.createdAt)}</span>
+
+      {/* Filter bar */}
+      <div className="tx-feed-filter">
+        <div className="search-input-wrap" style={{ flex: 1, maxWidth: 320 }}>
+          <i className="ti ti-search search-input-icon" />
+          <input
+            type="text"
+            placeholder="FILTER_BY_CAMPAIGN_TITLE_"
+            value={titleFilter}
+            onChange={e => handleTitleFilter(e.target.value)}
+          />
         </div>
-      ))}
+        {isFiltered && (
+          <span style={{ fontSize: 10, color: 'var(--text-dim)', letterSpacing: '0.06em' }}>
+            {filtered.length} RESULT{filtered.length !== 1 ? 'S' : ''}
+          </span>
+        )}
+      </div>
+
+      {/* Rows */}
+      {displayed.length === 0 ? (
+        <div className="tx-feed-empty">NO_TRANSACTIONS_FOUND</div>
+      ) : (
+        displayed.map(c => (
+          <div key={c.id} className="tx-feed-row">
+            <span className="tx-feed-addr">{c.creatorShort}</span>
+            <span className="tx-feed-action">CAMPAIGN_CREATED: {c.title}</span>
+            <span className="tx-feed-time">{timeAgo(c.createdAt)}</span>
+          </div>
+        ))
+      )}
+
+      {/* Pagination (hidden when filter active) */}
+      {!isFiltered && totalPages > 1 && (
+        <div className="tx-feed-pagination">
+          <button
+            className="pagination-btn"
+            disabled={txPage === 1}
+            onClick={() => setTxPage(p => p - 1)}
+          >
+            <i className="ti ti-chevron-left" />
+          </button>
+
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+            <button
+              key={p}
+              className={`pagination-btn${p === txPage ? ' active' : ''}`}
+              onClick={() => setTxPage(p)}
+            >
+              {p}
+            </button>
+          ))}
+
+          <button
+            className="pagination-btn"
+            disabled={txPage === totalPages}
+            onClick={() => setTxPage(p => p + 1)}
+          >
+            <i className="ti ti-chevron-right" />
+          </button>
+
+          <span className="pagination-info">
+            {(txPage - 1) * TX_PAGE_SIZE + 1}–{Math.min(txPage * TX_PAGE_SIZE, filtered.length)} / {filtered.length} TX
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -47,8 +124,15 @@ export default function Home({ wallet, diagnostic }) {
   const [campaigns,   setCampaigns]   = useState([]);
   const [loading,     setLoading]     = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [catFilter,    setCatFilter]    = useState(null);  // null = ALL, number = category index
-  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'success' | 'failed' | 'cancelled'
+  const [catFilter,    setCatFilter]    = useState(null);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [createdFrom,  setCreatedFrom]  = useState('');
+  const [createdTo,    setCreatedTo]    = useState('');
+  const [deadlineFrom, setDeadlineFrom] = useState('');
+  const [deadlineTo,   setDeadlineTo]   = useState('');
+  const [page,         setPage]         = useState(1);
+
+  const PAGE_SIZE = 10;
   const refundedIds = useRef(new Set());
 
   const loadCampaigns = useCallback(async (addr = wallet.address) => {
@@ -83,10 +167,41 @@ export default function Home({ wallet, diagnostic }) {
     })();
   }, [campaigns, wallet.connected, wallet.address]);
 
+  // Convert a date string "YYYY-MM-DD" to start/end of day in seconds
+  const toStartSec = iso => iso ? Math.floor(new Date(iso + 'T00:00:00').getTime() / 1000) : null;
+  const toEndSec   = iso => iso ? Math.floor(new Date(iso + 'T23:59:59').getTime() / 1000) : null;
+
+  const isFiltered = statusFilter !== 'all' || catFilter !== null || searchQuery !== ''
+    || createdFrom || createdTo || deadlineFrom || deadlineTo;
+
   const filtered = campaigns
     .filter(c => statusFilter === 'all' || c.status === statusFilter)
     .filter(c => catFilter === null || c.category === catFilter)
-    .filter(c => !searchQuery || c.title.toLowerCase().includes(searchQuery.toLowerCase()));
+    .filter(c => !searchQuery || c.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter(c => !toStartSec(createdFrom)  || Number(c.createdAt) >= toStartSec(createdFrom))
+    .filter(c => !toEndSec(createdTo)      || Number(c.createdAt) <= toEndSec(createdTo))
+    .filter(c => !toStartSec(deadlineFrom) || Number(c.deadline)  >= toStartSec(deadlineFrom))
+    .filter(c => !toEndSec(deadlineTo)     || Number(c.deadline)  <= toEndSec(deadlineTo));
+
+  // Sans filtre : tri par deadline la plus proche, pagination
+  // Avec filtre  : tous les résultats, pas de pagination
+  const sorted = isFiltered
+    ? filtered
+    : [...filtered].sort((a, b) => Number(a.deadline) - Number(b.deadline));
+
+  const totalPages  = Math.ceil(sorted.length / PAGE_SIZE);
+  const displayed   = isFiltered ? sorted : sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const handleStatusChange  = val => { setStatusFilter(val); setPage(1); };
+  const handleCatChange     = val => { setCatFilter(val);    setPage(1); };
+  const handleSearch        = val => { setSearchQuery(val);  setPage(1); };
+  const handleCreatedFrom   = val => { setCreatedFrom(val);  setPage(1); };
+  const handleCreatedTo     = val => { setCreatedTo(val);    setPage(1); };
+  const handleDeadlineFrom  = val => { setDeadlineFrom(val); setPage(1); };
+  const handleDeadlineTo    = val => { setDeadlineTo(val);   setPage(1); };
+
+  const hasDateFilter = createdFrom || createdTo || deadlineFrom || deadlineTo;
+  const clearDates    = () => { setCreatedFrom(''); setCreatedTo(''); setDeadlineFrom(''); setDeadlineTo(''); setPage(1); };
 
   return (
     <>
@@ -135,13 +250,13 @@ export default function Home({ wallet, diagnostic }) {
             type="text"
             placeholder="QUERY_CONTRACT_OR_NAME_"
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            onChange={e => handleSearch(e.target.value)}
           />
         </div>
 
         {/* Status filter dropdown */}
         <div className="select-wrap" style={{ minWidth: 160 }}>
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+          <select value={statusFilter} onChange={e => handleStatusChange(e.target.value)}>
             <option value="all">ALL_STATUS</option>
             <option value="active">ACTIVE</option>
             <option value="success">SUCCESS</option>
@@ -151,16 +266,16 @@ export default function Home({ wallet, diagnostic }) {
           <i className="ti ti-chevron-down select-chevron" />
         </div>
 
-        {/* ALL + real categories */}
+        {/* Category chips */}
         <button
           className={`filter-chip${catFilter === null ? ' active' : ''}`}
-          onClick={() => setCatFilter(null)}
+          onClick={() => handleCatChange(null)}
         >ALL</button>
         {CATEGORIES.map((cat, i) => (
           <button
             key={i}
             className={`filter-chip${catFilter === i ? ' active' : ''}`}
-            onClick={() => setCatFilter(i)}
+            onClick={() => handleCatChange(i)}
           >{cat}</button>
         ))}
 
@@ -171,6 +286,39 @@ export default function Home({ wallet, diagnostic }) {
           disabled={!wallet.connected} onClick={() => loadCampaigns()}>
           REFRESH
         </Button>
+      </div>
+
+      {/* ── Date range filters ── */}
+      <div className="date-filter-bar">
+        <span className="date-filter-label">
+          <i className="ti ti-calendar-search" /> DATE_FILTERS
+        </span>
+
+        <div className="date-filter-group">
+          <span className="date-filter-group-label">CREATED_BETWEEN</span>
+          <input type="date" className="date-filter-input"
+            value={createdFrom} onChange={e => handleCreatedFrom(e.target.value)} />
+          <span className="date-filter-sep">→</span>
+          <input type="date" className="date-filter-input"
+            value={createdTo} onChange={e => handleCreatedTo(e.target.value)} />
+        </div>
+
+        <div className="date-filter-divider" />
+
+        <div className="date-filter-group">
+          <span className="date-filter-group-label">DEADLINE_BETWEEN</span>
+          <input type="date" className="date-filter-input"
+            value={deadlineFrom} onChange={e => handleDeadlineFrom(e.target.value)} />
+          <span className="date-filter-sep">→</span>
+          <input type="date" className="date-filter-input"
+            value={deadlineTo} onChange={e => handleDeadlineTo(e.target.value)} />
+        </div>
+
+        {hasDateFilter && (
+          <button className="date-filter-clear" onClick={clearDates}>
+            <i className="ti ti-x" /> CLEAR_DATES
+          </button>
+        )}
       </div>
 
       {/* ── Campaign grid ── */}
@@ -187,11 +335,48 @@ export default function Home({ wallet, diagnostic }) {
           : 'CREATE_THE_FIRST_ONE.'
         } />
       ) : (
-        <div className="campaigns-grid">
-          {filtered.map(c => (
-            <CampaignCard key={c.id} campaign={c} wallet={wallet} onAction={loadCampaigns} />
-          ))}
-        </div>
+        <>
+          <div className="campaigns-grid">
+            {displayed.map(c => (
+              <CampaignCard key={c.id} campaign={c} wallet={wallet} onAction={loadCampaigns} />
+            ))}
+          </div>
+
+          {/* ── Pagination (hidden when filters are active) ── */}
+          {!isFiltered && totalPages > 1 && (
+            <div className="pagination">
+              <button
+                className="pagination-btn"
+                disabled={page === 1}
+                onClick={() => setPage(p => p - 1)}
+              >
+                <i className="ti ti-chevron-left" />
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                <button
+                  key={p}
+                  className={`pagination-btn${p === page ? ' active' : ''}`}
+                  onClick={() => setPage(p)}
+                >
+                  {p}
+                </button>
+              ))}
+
+              <button
+                className="pagination-btn"
+                disabled={page === totalPages}
+                onClick={() => setPage(p => p + 1)}
+              >
+                <i className="ti ti-chevron-right" />
+              </button>
+
+              <span className="pagination-info">
+                {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, sorted.length)} / {sorted.length} CAMPAIGNS
+              </span>
+            </div>
+          )}
+        </>
       )}
 
       {/* ── Live TX Feed ── */}
