@@ -29,7 +29,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Deploy
-        run: npm run deploy
+        run: |
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/dinavalisoaa/mbds-blockchain.git
+          npm run deploy
         env:
           VITE_PINATA_JWT: ${{ secrets.VITE_PINATA_JWT }}
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
