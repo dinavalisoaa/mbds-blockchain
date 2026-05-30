@@ -171,16 +171,17 @@ export default function Dashboard({ wallet }) {
     ? `${wallet.address.slice(0, 5)}...${wallet.address.slice(-4)}_ROOT`
     : '';
 
-  const myCampaigns = campaigns.filter(c => c.creator.toLowerCase() === addr);
-  const myContribs  = campaigns.filter(c => c.myContrib > 0n && c.creator.toLowerCase() !== addr);
+  const myCampaigns  = campaigns.filter(c => c.creator.toLowerCase() === addr);
+  const myContribs   = campaigns.filter(c => c.myContrib > 0n && c.creator.toLowerCase() !== addr);
+  const allMyContribs = campaigns.filter(c => c.myContrib > 0n);
 
-  const pendingWithdraw   = myCampaigns.filter(c => c.status === 'success' && !c.withdrawn).length;
-  const pendingRefund     = myContribs.filter(c  => c.status === 'failed'  && c.myContrib > 0n).length;
-  const totalContrib      = myContribs.reduce((sum, c) => sum + Number(c.myContribEth), 0).toFixed(4);
-  const withdrawableEth   = myCampaigns
+  const pendingWithdraw = myCampaigns.filter(c => c.status === 'success' && !c.withdrawn).length;
+  const pendingRefund   = myContribs.filter(c => c.status === 'failed' && c.myContrib > 0n).length;
+  const totalContrib    = allMyContribs.reduce((sum, c) => sum + Number(c.myContribEth), 0).toFixed(4);
+  const withdrawableEth = myCampaigns
     .filter(c => c.status === 'success' && !c.withdrawn)
     .reduce((s, c) => s + Number(c.amountRaisedEth), 0).toFixed(4);
-  const refundableEth     = myContribs
+  const refundableEth   = myContribs
     .filter(c => c.status === 'failed' && c.myContrib > 0n)
     .reduce((s, c) => s + Number(c.myContribEth), 0).toFixed(4);
 
@@ -279,10 +280,10 @@ export default function Dashboard({ wallet }) {
             <span className="dash2-sec-link">HISTORIQUE</span>
           </div>
           <div className="dash2-contribs-wrap">
-            {myContribs.length === 0 ? (
+            {allMyContribs.length === 0 ? (
               <div className="dash2-empty">AUCUNE CONTRIBUTION</div>
             ) : (
-              myContribs.map(c => (
+              allMyContribs.map(c => (
                 <ContribCard key={c.id} campaign={c} onAction={load} />
               ))
             )}

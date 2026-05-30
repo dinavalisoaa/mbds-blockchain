@@ -117,7 +117,8 @@ export default function Home({ wallet, diagnostic }) {
           </h1>
           <p className="hero-subtext">
             DÉPLOYEZ DES CAMPAGNES DE FINANCEMENT TRANSPARENTES SUR ETHEREUM
-            SEPOLIA. FONDS BLOQUÉS DANS DES CONTRATS INTELLIGENTS — LIBÉRÉS UNIQUEMENT EN CAS DE SUCCÈS.
+            SEPOLIA. FONDS BLOQUÉS DANS DES CONTRATS INTELLIGENTS — LIBÉRÉS
+            UNIQUEMENT EN CAS DE SUCCÈS.
           </p>
           <div className="hero-ctas">
             <Button
@@ -127,7 +128,11 @@ export default function Home({ wallet, diagnostic }) {
             >
               LANCER UNE CAMPAGNE
             </Button>
-            <Button variant="outline" icon="ti-chart-bar">
+            <Button
+              onClick={() => navigate("/dashboard")}
+              variant="outline"
+              icon="ti-chart-bar"
+            >
               VOIR LES STATISTIQUES
             </Button>
           </div>
@@ -225,7 +230,12 @@ export default function Home({ wallet, diagnostic }) {
       ) : (
         <div className="campaigns-grid">
           {filtered.map((c) => (
-            <CampaignCard key={c.id} campaign={c} wallet={wallet} onAction={loadCampaigns} />
+            <CampaignCard
+              key={c.id}
+              campaign={c}
+              wallet={wallet}
+              onAction={loadCampaigns}
+            />
           ))}
         </div>
       )}

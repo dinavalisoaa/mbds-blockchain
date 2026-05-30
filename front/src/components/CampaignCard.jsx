@@ -16,10 +16,11 @@ export default function CampaignCard({ campaign: c, wallet, onAction }) {
   const handleContribute = async e => {
     e.preventDefault();
     e.stopPropagation();
-    if (!amount || +amount <= 0) return;
+    const normalized = amount.replace(',', '.');
+    if (!normalized || +normalized <= 0) return;
     setLoading(true);
     try {
-      await runTx(() => txContribute(c.id, amount), TX_LABELS.contribute);
+      await runTx(() => txContribute(c.id, normalized), TX_LABELS.contribute);
       setAmount('');
       if (onAction) await onAction();
     } catch { /* toast */ }
@@ -71,14 +72,21 @@ export default function CampaignCard({ campaign: c, wallet, onAction }) {
           </div>
         </div>
 
+        {/* Closed — funds already withdrawn */}
+        {c.status === 'closed' && (
+          <div className="card-closed-label">
+            <i className="ti ti-lock" /> CAMPAGNE FERMÉE
+          </div>
+        )}
+
         {/* Contribute — active only */}
         {c.status === 'active' && (
           <form className="card-contribute" onSubmit={handleContribute} onClick={e => e.stopPropagation()}>
             <div className="card-contribute-input-wrap">
               <input
-                type="number" min="0.000001" step="0.001" placeholder="0.00"
+                type="text" inputMode="decimal" placeholder="0.00"
                 value={amount}
-                onChange={e => setAmount(e.target.value)}
+                onChange={e => { const v = e.target.value; if (v === '' || /^\d*[.,]?\d*$/.test(v)) setAmount(v); }}
                 disabled={loading || !wallet?.connected}
               />
               <span className="card-contribute-suffix">ETH</span>
