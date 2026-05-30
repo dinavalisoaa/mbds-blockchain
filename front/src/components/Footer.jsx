@@ -21,7 +21,7 @@ export default function Footer() {
         >ETHERSCAN</a>
         <a href="#" className="footer-link">SMART_CONTRACT</a>
         <a href="#" className="footer-link">PRIVACY</a>
-        <span className="footer-copy">© 2024 ETHERFUND</span>
+        <span className="footer-copy">© 2026 ETHERFUND</span>
       </div>
     </footer>
   );
