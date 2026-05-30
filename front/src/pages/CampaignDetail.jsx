@@ -102,11 +102,11 @@ export default function CampaignDetail({ wallet }) {
 
   const backLink = (
     <Link to="/" className="back-link">
-      <i className="ti ti-arrow-left" /> ALL_CAMPAIGNS
+      <i className="ti ti-arrow-left" /> TOUTES LES CAMPAGNES
     </Link>
   );
 
-  if (loading) return <>{backLink}<Spinner label="LOADING_CAMPAIGN..." /></>;
+  if (loading) return <>{backLink}<Spinner label="CHARGEMENT..." /></>;
   if (error)   return (
     <div>
       {backLink}
@@ -135,11 +135,11 @@ export default function CampaignDetail({ wallet }) {
   const dl = new Date(Number(c.deadline) * 1000);
   const deadlineDateTime = `${String(dl.getDate()).padStart(2,'0')}/${String(dl.getMonth()+1).padStart(2,'0')}/${dl.getFullYear()} ${String(dl.getHours()).padStart(2,'0')}:${String(dl.getMinutes()).padStart(2,'0')}`;
 
-  const statusLabel = c.status === 'active'    ? 'LIVE_ON_SEPOLIA'
-                    : c.status === 'success'   ? 'FUNDED'
-                    : c.status === 'closed'    ? 'CLOSED'
-                    : c.status === 'failed'    ? 'FAILED'
-                    : 'CANCELLED';
+  const statusLabel = c.status === 'active'    ? 'EN DIRECT'
+                    : c.status === 'success'   ? 'FINANCÉ'
+                    : c.status === 'closed'    ? 'FERMÉ'
+                    : c.status === 'failed'    ? 'ÉCHOUÉ'
+                    : 'ANNULÉ';
   const nodeLabel = `${c.status.toUpperCase()}_NODE_V1`;
 
   return (
@@ -167,14 +167,14 @@ export default function CampaignDetail({ wallet }) {
           {/* Status row */}
           <div className="fiche-status-row">
             <div className="fiche-status-left">
-              <span className="fiche-status-label">CURRENT_STATUS</span>
+              <span className="fiche-status-label">STATUT ACTUEL</span>
               <span className="fiche-status-live">
                 <span className="fiche-live-dot" />
                 {statusLabel}
               </span>
             </div>
             <div className="fiche-status-right">
-              <span className="fiche-status-label">URGENCY_COUNTDOWN</span>
+              <span className="fiche-status-label">COMPTE À REBOURS</span>
               <CountdownVal deadline={c.deadline} status={c.status} />
             </div>
           </div>
@@ -182,10 +182,10 @@ export default function CampaignDetail({ wallet }) {
           <div className="fiche-divider" />
 
           {/* Funded */}
-          <div className="fiche-funded-label">TOTAL_FUNDED</div>
+          <div className="fiche-funded-label">TOTAL FINANCÉ</div>
           <div className="fiche-funded-row">
             <span className="fiche-funded-val">{c.amountRaisedEth} <span className="fiche-funded-unit">ETH</span></span>
-            <span className="fiche-goal-label">GOAL: {c.goalEth} ETH</span>
+            <span className="fiche-goal-label">OBJECTIF: {c.goalEth} ETH</span>
           </div>
 
           {/* Segmented bar */}
@@ -193,9 +193,9 @@ export default function CampaignDetail({ wallet }) {
 
           <div className="fiche-bar-meta">
             <span className="fiche-pct" style={{ color: c.status === 'failed' ? 'var(--red)' : 'var(--green)' }}>
-              {c.progress}% COMPLETED
+              {c.progress}% COMPLÉTÉ
             </span>
-            <span className="fiche-contrib-count">{c.contributorCount} CONTRIBUTORS</span>
+            <span className="fiche-contrib-count">{c.contributorCount} CONTRIBUTEURS</span>
           </div>
 
           <div className="fiche-divider" />
@@ -204,14 +204,14 @@ export default function CampaignDetail({ wallet }) {
           {c.myContrib > 0n && (
             <div className="fiche-stake-box">
               <i className="ti ti-info-circle" style={{ color: 'var(--green)', fontSize: 13 }} />
-              <span>YOUR_STAKE: <strong style={{ color: 'var(--green)' }}>{c.myContribEth} ETH</strong></span>
+              <span>MA MISE: <strong style={{ color: 'var(--green)' }}>{c.myContribEth} ETH</strong></span>
             </div>
           )}
 
           {/* Contribute — active + connected */}
           {c.status === 'active' && wallet?.connected && (
             <div className="fiche-contribute">
-              <label className="fiche-contribute-label">CONTRIBUTE_AMOUNT</label>
+              <label className="fiche-contribute-label">MONTANT À CONTRIBUER</label>
               <div className="fiche-contribute-row">
                 <div className="input-suffix-wrap" style={{ flex: 1, position: 'relative' }}>
                   <input
@@ -234,13 +234,13 @@ export default function CampaignDetail({ wallet }) {
                   onClick={() => run(() => txContribute(c.id, effectiveAmt), TX_LABELS.contribute, setLoadingContrib)}
                 >
                   {loadingContrib ? <i className="ti ti-loader-2 spinning" /> : null}
-                  CONTRIBUTE_ETH
+                  CONTRIBUER ETH
                 </button>
               </div>
               {isCapped && (
                 <p className="fiche-cap-notice">
                   <i className="ti ti-arrows-minimize" />
-                  Capped to <strong>{effectiveAmt} ETH</strong> — remaining goal.
+                  Plafonné à <strong>{effectiveAmt} ETH</strong> — objectif restant.
                 </p>
               )}
             </div>
@@ -249,7 +249,7 @@ export default function CampaignDetail({ wallet }) {
           {/* Contribute — active + not connected */}
           {c.status === 'active' && !wallet?.connected && (
             <button className="detail-cta-btn" disabled style={{ marginTop: '1rem' }}>
-              CONNECT_WALLET_TO_CONTRIBUTE
+              CONNECTER PORTEFEUILLE POUR CONTRIBUER
             </button>
           )}
 
@@ -264,7 +264,7 @@ export default function CampaignDetail({ wallet }) {
                 setTimeout(() => document.getElementById('edit-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
               }}
             >
-              <i className="ti ti-edit" /> EDIT_CAMPAIGN
+              <i className="ti ti-edit" /> MODIFIER CAMPAGNE
             </button>
           )}
 
@@ -272,7 +272,7 @@ export default function CampaignDetail({ wallet }) {
           {c.status === 'active' && isCreator && c.amountRaised === 0n && (
             <div style={{ marginTop: '1rem' }}>
               <p className="fiche-cancel-notice">
-                <i className="ti ti-alert-triangle" /> No contributions yet — cancellation is permanent.
+                <i className="ti ti-alert-triangle" /> Aucune contribution — l'annulation est permanente.
               </p>
               <button
                 className="detail-cta-btn detail-cta-btn--danger"
@@ -280,7 +280,7 @@ export default function CampaignDetail({ wallet }) {
                 onClick={() => run(() => txCancelCampaign(c.id), TX_LABELS.cancelCampaign, setLoadingCancel)}
               >
                 {loadingCancel ? <i className="ti ti-loader-2 spinning" /> : <i className="ti ti-x" />}
-                CANCEL_CAMPAIGN
+                ANNULER CAMPAGNE
               </button>
             </div>
           )}
@@ -293,7 +293,7 @@ export default function CampaignDetail({ wallet }) {
               onClick={() => run(() => txWithdraw(c.id), TX_LABELS.withdraw, setLoadingWithdraw)}
             >
               {loadingWithdraw ? <i className="ti ti-loader-2 spinning" /> : <i className="ti ti-download" />}
-              WITHDRAW_FUNDS ({c.amountRaisedEth} ETH)
+              RETIRER LES FONDS ({c.amountRaisedEth} ETH)
             </button>
           )}
 
@@ -305,14 +305,14 @@ export default function CampaignDetail({ wallet }) {
               onClick={() => run(() => txRefund(c.id), TX_LABELS.refund, setLoadingRefund)}
             >
               {loadingRefund ? <i className="ti ti-loader-2 spinning" /> : <i className="ti ti-receipt-refund" />}
-              CLAIM_REFUND ({c.myContribEth} ETH)
+              RÉCLAMER REMBOURSEMENT ({c.myContribEth} ETH)
             </button>
           )}
 
           {/* Already withdrawn */}
           {c.status === 'success' && c.withdrawn && (
             <div className="detail-withdrawn-note" style={{ marginTop: '1rem' }}>
-              <i className="ti ti-circle-check" /> FUNDS_WITHDRAWN
+              <i className="ti ti-circle-check" /> FONDS RETIRÉS
             </div>
           )}
         </div>
@@ -326,28 +326,28 @@ export default function CampaignDetail({ wallet }) {
           <h1 className="fiche-title">{c.title}</h1>
           {c.description
             ? <p className="fiche-desc">{c.description}</p>
-            : <p className="fiche-desc" style={{ opacity: 0.4, fontStyle: 'italic' }}>No description provided.</p>
+            : <p className="fiche-desc" style={{ opacity: 0.4, fontStyle: 'italic' }}>Aucune description.</p>
           }
         </div>
 
         {/* RIGHT: metadata */}
         <div className="fiche-meta-grid">
           <div className="fiche-meta-item">
-            <span className="fiche-meta-label">CATEGORY</span>
+            <span className="fiche-meta-label">CATÉGORIE</span>
             <span className="fiche-meta-val fiche-meta-val--green">{CATEGORIES[c.category] ?? '—'}</span>
           </div>
           <div className="fiche-meta-item">
-            <span className="fiche-meta-label">CREATED</span>
+            <span className="fiche-meta-label">CRÉÉ LE</span>
             <span className="fiche-meta-val">{createdDate}</span>
           </div>
           <div className="fiche-meta-item">
-            <span className="fiche-meta-label">DEADLINE</span>
+            <span className="fiche-meta-label">ÉCHÉANCE</span>
             <span className={`fiche-meta-val ${c.status === 'active' ? 'fiche-meta-val--green' : ''}`}>
               {deadlineDateTime}
             </span>
           </div>
           <div className="fiche-meta-item fiche-meta-item--full">
-            <span className="fiche-meta-label">CREATOR_ADDRESS</span>
+            <span className="fiche-meta-label">ADRESSE CRÉATEUR</span>
             <div className="fiche-meta-addr-row">
               <a href={etherscanCreator} target="_blank" rel="noopener noreferrer"
                 className="fiche-meta-val fiche-meta-val--addr">
@@ -360,11 +360,11 @@ export default function CampaignDetail({ wallet }) {
             </div>
           </div>
           <div className="fiche-meta-item">
-            <span className="fiche-meta-label">CONTRIBUTORS</span>
-            <span className="fiche-meta-val fiche-meta-val--green">{c.contributorCount}_NODES</span>
+            <span className="fiche-meta-label">CONTRIBUTEURS</span>
+            <span className="fiche-meta-val fiche-meta-val--green">{c.contributorCount}_NŒUDS</span>
           </div>
           <div className="fiche-meta-item">
-            <span className="fiche-meta-label">CHAIN</span>
+            <span className="fiche-meta-label">RÉSEAU</span>
             <span className="fiche-meta-val fiche-meta-val--green">SEPOLIA_ETH</span>
           </div>
         </div>
@@ -394,7 +394,7 @@ export default function CampaignDetail({ wallet }) {
             setEditOpen(o => !o);
           }}>
             <i className={`ti ${editOpen ? 'ti-chevron-up' : 'ti-edit'}`} />
-            {editOpen ? 'CLOSE_EDITOR' : 'EDIT_CAMPAIGN'}
+            {editOpen ? 'FERMER ÉDITEUR' : 'MODIFIER CAMPAGNE'}
           </button>
 
           {editOpen && (
@@ -403,7 +403,7 @@ export default function CampaignDetail({ wallet }) {
               {/* ── Meta edit — locked once contributions exist ── */}
               {c.amountRaised === 0n ? (
                 <>
-                  <div className="fiche-edit-section-label">CAMPAIGN_INFO</div>
+                  <div className="fiche-edit-section-label">INFOS CAMPAGNE</div>
 
                   <div className="detail-field">
                     <label>DESCRIPTION</label>
@@ -426,7 +426,7 @@ export default function CampaignDetail({ wallet }) {
                           setEditImageFile(null);
                           if (editFileRef.current) editFileRef.current.value = '';
                         }}>
-                          <i className="ti ti-x" /> REMOVE
+                          <i className="ti ti-x" /> SUPPRIMER
                         </button>
                       </div>
                     ) : (
@@ -467,8 +467,8 @@ export default function CampaignDetail({ wallet }) {
                     }}
                   >
                     {loadingMeta
-                      ? <><i className="ti ti-loader-2 spinning" /> SAVING...</>
-                      : <><i className="ti ti-device-floppy" /> SAVE_CHANGES</>
+                      ? <><i className="ti ti-loader-2 spinning" /> SAUVEGARDE...</>
+                      : <><i className="ti ti-device-floppy" /> ENREGISTRER</>
                     }
                   </button>
                 </>
@@ -481,7 +481,7 @@ export default function CampaignDetail({ wallet }) {
 
               {/* ── Extend deadline ─────────────────────────────── */}
               <div className="fiche-edit-divider" />
-              <div className="fiche-edit-section-label">EXTEND_DEADLINE</div>
+              <div className="fiche-edit-section-label">PROLONGER ÉCHÉANCE</div>
 
               <div className="detail-field">
                 <label>JOURS SUPPLÉMENTAIRES (max 30)</label>
@@ -492,7 +492,7 @@ export default function CampaignDetail({ wallet }) {
                     value={editExtraDays}
                     onChange={e => setEditExtraDays(e.target.value)}
                   />
-                  <span className="input-suffix">DAYS</span>
+                  <span className="input-suffix">JOURS</span>
                 </div>
               </div>
 
@@ -514,8 +514,8 @@ export default function CampaignDetail({ wallet }) {
                 }}
               >
                 {loadingDeadline
-                  ? <><i className="ti ti-loader-2 spinning" /> EXTENDING...</>
-                  : <><i className="ti ti-clock-plus" /> EXTEND_DEADLINE</>
+                  ? <><i className="ti ti-loader-2 spinning" /> PROLONGATION...</>
+                  : <><i className="ti ti-clock-plus" /> PROLONGER ÉCHÉANCE</>
                 }
               </button>
 
@@ -527,26 +527,26 @@ export default function CampaignDetail({ wallet }) {
       {/* ── CONTRIBUTORS ──────────────────────────────────── */}
       <div className="fiche-log">
         <div className="fiche-log-header">
-          <span className="fiche-log-title">CONTRIBUTORS</span>
+          <span className="fiche-log-title">CONTRIBUTEURS</span>
           {contributors.length > 0 && (
             <span className="fiche-log-tab-count">{contributors.length}</span>
           )}
           <span className="fiche-log-realtime">
-            <span className="fiche-live-dot" /> REAL-TIME
+            <span className="fiche-live-dot" /> EN DIRECT
           </span>
         </div>
 
         <div className="fiche-tx-header">
-          <span>RANK</span>
-          <span>ADDRESS</span>
-          <span>AMOUNT_ETH</span>
-          <span>SHARE_%</span>
+          <span>RANG</span>
+          <span>ADRESSE</span>
+          <span>MONTANT ETH</span>
+          <span>PART %</span>
         </div>
 
         {contribLoading
-          ? <div style={{ padding: '2rem 1rem' }}><Spinner label="LOADING_CONTRIBUTORS..." /></div>
+          ? <div style={{ padding: '2rem 1rem' }}><Spinner label="CHARGEMENT..." /></div>
           : contributors.length === 0
-            ? <EmptyState icon="ti-users" title="NO_CONTRIBUTORS" subtitle="NO_CONTRIBUTIONS_YET." />
+            ? <EmptyState icon="ti-users" title="AUCUN CONTRIBUTEUR" subtitle="AUCUNE CONTRIBUTION POUR L'INSTANT." />
             : [...contributors]
                 .sort((a, b) => (b.amount > a.amount ? 1 : -1))
                 .map((contrib, i) => (
@@ -589,7 +589,7 @@ function CountdownVal({ deadline, status }) {
   if (status !== 'active') return <span className="fiche-countdown-val fiche-countdown-val--dim">--:--:--:--</span>;
   return (
     <span className={`fiche-countdown-val${isUrgent ? ' fiche-countdown-val--urgent' : ''}`}>
-      {done ? 'EXPIRED' : display}
+      {done ? 'EXPIRÉ' : display}
     </span>
   );
 }

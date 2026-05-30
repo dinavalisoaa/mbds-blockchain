@@ -14,16 +14,16 @@ export default function Navbar({ wallet, connecting, theme, onToggleTheme, onCon
 
         <div className="navbar-nav">
           <NavLink to="/" end className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-            EXPLORE
+            EXPLORER
           </NavLink>
           {wallet.connected && (
             <NavLink to="/dashboard" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-              DASHBOARD
+              TABLEAU DE BORD
             </NavLink>
           )}
           {wallet.connected && (
             <NavLink to="/create" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-              <i className="ti ti-rocket" /> CREATE
+              <i className="ti ti-rocket" /> CRÉER
             </NavLink>
           )}
           <a href="#" className="nav-link">DOCS</a>
@@ -53,7 +53,7 @@ export default function Navbar({ wallet, connecting, theme, onToggleTheme, onCon
             </div>
           ) : (
             <Button variant="primary" icon="ti-wallet" loading={connecting} onClick={onConnect}>
-              CONNECT_WALLET
+              CONNECTER PORTEFEUILLE
             </Button>
           )}
         </div>

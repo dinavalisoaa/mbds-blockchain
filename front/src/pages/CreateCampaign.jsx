@@ -48,7 +48,7 @@ function ImageUpload({ preview, onFile, onClear }) {
       <div className="upload-preview-wrap">
         <img src={preview} alt="Campaign preview" />
         <button className="upload-remove-btn" onClick={onClear} type="button">
-          <i className="ti ti-x" /> REMOVE
+          <i className="ti ti-x" /> SUPPRIMER
         </button>
       </div>
     );
@@ -64,7 +64,7 @@ function ImageUpload({ preview, onFile, onClear }) {
       onKeyDown={e => e.key === 'Enter' && ref.current.click()}
     >
       <i className="ti ti-photo-up" />
-      <span>Drop image or <strong>BROWSE_FILE</strong></span>
+      <span>Déposer ou <strong>PARCOURIR</strong></span>
       <input ref={ref} type="file" accept="image/*"
         onChange={e => e.target.files[0] && onFile(e.target.files[0])} />
     </div>
@@ -104,10 +104,10 @@ export default function CreateCampaign({ wallet }) {
     try {
       let cid = '';
       if (imageFile) {
-        setLoadingMsg('UPLOADING_ASSET...');
+        setLoadingMsg('ENVOI IMAGE...');
         cid = await uploadToPinata(imageFile);
       }
-      setLoadingMsg('DEPLOYING_CONTRACT...');
+      setLoadingMsg('DÉPLOIEMENT...');
       const receipt = await runTx(
         () => txCreateCampaign(
           fields.title, fields.desc, cid,
@@ -132,8 +132,8 @@ export default function CreateCampaign({ wallet }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const previewTitle    = fields.title || 'UNNAMED_PROJECT';
-  const previewDesc     = fields.desc  || 'Awaiting deployment parameters...';
+  const previewTitle    = fields.title || 'PROJET SANS NOM';
+  const previewDesc     = fields.desc  || 'En attente des paramètres...';
   const previewGoal     = fields.goal  || '0.00';
   const previewDeadline = formatDeadlinePreview(fields.deadline);
   const previewDaysLeft = daysUntil(fields.deadline);
@@ -144,7 +144,7 @@ export default function CreateCampaign({ wallet }) {
   return (
     <div className="campaign-detail">
       <Link to="/" className="back-link">
-        <i className="ti ti-arrow-left" /> ALL_CAMPAIGNS
+        <i className="ti ti-arrow-left" /> TOUTES LES CAMPAGNES
       </Link>
 
       <div className="detail-page">
@@ -154,32 +154,32 @@ export default function CreateCampaign({ wallet }) {
           <div className="detail-panel-header">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
               <h1 className="detail-panel-title">
-                {prefill ? 'REDEPLOY_CAMPAIGN' : 'INITIALIZE_CAMPAIGN'}
+                {prefill ? 'REDÉPLOYER CAMPAGNE' : 'INITIALISER CAMPAGNE'}
               </h1>
               <span className={`badge ${prefill ? 'cancelled' : 'active'}`}>
-                {prefill ? 'EDIT' : 'NEW'}
+                {prefill ? 'MODIFIER' : 'NOUVEAU'}
               </span>
             </div>
             <p className="detail-panel-subtitle">
               {prefill
-                ? 'Editing a cancelled campaign. A new contract will be deployed with the updated parameters.'
-                : 'Deploy new crowdfunding smart contract on Sepolia Testnet.'}
+                ? 'Modification d\'une campagne annulée. Un nouveau contrat sera déployé avec les paramètres mis à jour.'
+                : 'Déployer un nouveau contrat de financement sur Sepolia Testnet.'}
             </p>
           </div>
 
           {/* Row 1 — title + category */}
           <div className="detail-field-grid">
             <div className="detail-field">
-              <label>CAMPAIGN_TITLE</label>
+              <label>TITRE DE LA CAMPAGNE</label>
               <input
                 type="text"
-                placeholder="ENTER_PROJECT_NAME_"
+                placeholder="NOM DU PROJET"
                 value={fields.title}
                 onChange={set('title')}
               />
             </div>
             <div className="detail-field">
-              <label>SECTOR_CLASSIFICATION</label>
+              <label>CATÉGORIE</label>
               <div className="select-wrap">
                 <select value={fields.category} onChange={set('category')}>
                   {CATEGORIES.map((cat, i) => (
@@ -193,10 +193,10 @@ export default function CreateCampaign({ wallet }) {
 
           {/* Row 2 — description */}
           <div className="detail-field">
-            <label>MANIFESTO_DESCRIPTION</label>
+            <label>DESCRIPTION</label>
             <textarea
               rows={5}
-              placeholder="DESCRIBE_THE_UTILITY_OF_THIS_DEPLOYMENT_"
+              placeholder="DÉCRIVEZ L'UTILITÉ DE CE PROJET"
               value={fields.desc}
               onChange={set('desc')}
             />
@@ -205,7 +205,7 @@ export default function CreateCampaign({ wallet }) {
           {/* Row 3 — goal + deadline */}
           <div className="detail-field-grid">
             <div className="detail-field">
-              <label>TARGET_GOAL (ETH)</label>
+              <label>OBJECTIF (ETH)</label>
               <div className="input-suffix-wrap">
                 <input
                   type="number" min="0.01" step="0.01"
@@ -217,7 +217,7 @@ export default function CreateCampaign({ wallet }) {
               </div>
             </div>
             <div className="detail-field">
-              <label>DEADLINE (DATE &amp; TIME)</label>
+              <label>DATE LIMITE</label>
               <input
                 type="datetime-local"
                 min={minDeadline()}
@@ -229,7 +229,7 @@ export default function CreateCampaign({ wallet }) {
 
           {/* Row 4 — image */}
           <div className="detail-field">
-            <label>VISUAL_ASSET</label>
+            <label>IMAGE</label>
             <ImageUpload preview={preview} onFile={handleFile} onClear={handleClearImage} />
           </div>
 
@@ -244,8 +244,8 @@ export default function CreateCampaign({ wallet }) {
                 ? <i className="ti ti-loader-2 spinning" />
                 : <i className="ti ti-rocket" />}
               {loading
-                ? (loadingMsg || 'LOADING...')
-                : wallet.connected ? 'DECODE_AND_DEPLOY_CONTRACT' : 'CONNECT_WALLET_TO_DEPLOY'}
+                ? (loadingMsg || 'CHARGEMENT...')
+                : wallet.connected ? 'DÉPLOYER LE CONTRAT' : 'CONNECTER PORTEFEUILLE'}
             </button>
           </div>
         </div>
@@ -254,7 +254,7 @@ export default function CreateCampaign({ wallet }) {
         <div className="detail-right">
           <div className="preview-label-row">
             <span className="preview-label-dot" />
-            LIVE_CONTRACT_PREVIEW
+            APERÇU EN DIRECT
           </div>
 
           <div className="detail-preview-card">
@@ -283,34 +283,34 @@ export default function CreateCampaign({ wallet }) {
 
               <div className="preview-card-stats">
                 <div>
-                  <div className="preview-stat-label">GOAL_THRESHOLD</div>
+                  <div className="preview-stat-label">OBJECTIF</div>
                   <div className="preview-stat-value teal">{previewGoal} ETH</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div className="preview-stat-label">DAYS_REMAINING</div>
-                  <div className="preview-stat-value">{previewDaysLeft} DAYS</div>
+                  <div className="preview-stat-label">JOURS RESTANTS</div>
+                  <div className="preview-stat-value">{previewDaysLeft} JOURS</div>
                 </div>
               </div>
 
               <div className="preview-card-divider" />
 
               <div style={{ fontSize: 10, color: 'var(--text-dim)', letterSpacing: '0.04em' }}>
-                DEADLINE: <span style={{ color: 'var(--text)' }}>{previewDeadline}</span>
+                ÉCHÉANCE: <span style={{ color: 'var(--text)' }}>{previewDeadline}</span>
               </div>
 
               <div className="preview-card-footer-bar">
                 <span style={{ color: 'var(--green)', fontSize: 10, letterSpacing: '0.06em' }}>
-                  0.0% FUNDED
+                  0.0% FINANCÉ
                 </span>
                 <span style={{ fontSize: 10, color: 'var(--text-dim)', letterSpacing: '0.04em' }}>
-                  CREATED: {todayFormatted()}
+                  CRÉÉ: {todayFormatted()}
                 </span>
               </div>
             </div>
           </div>
 
           <div className="contract-link-box">
-            <div className="contract-link-label">DEPLOYMENT_LINK</div>
+            <div className="contract-link-label">LIEN DE DÉPLOIEMENT</div>
             <div className="contract-link-row">
               <i className="ti ti-link" style={{ color: 'var(--green)', flexShrink: 0 }} />
               <span className="contract-link-url">sepolia.ethfund.io/new-campaign</span>

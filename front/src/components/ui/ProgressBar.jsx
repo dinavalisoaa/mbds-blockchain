@@ -25,8 +25,8 @@ export default function ProgressBar({
       </div>
       {showLabels && value !== undefined && goal !== undefined && (
         <div className="progress-labels">
-          <span>{Number(value).toFixed(4)} ETH RAISED</span>
-          <span>{pct}% · GOAL {Number(goal).toFixed(4)} ETH</span>
+          <span>{Number(value).toFixed(4)} ETH COLLECTÉ</span>
+          <span>{pct}% · OBJECTIF {Number(goal).toFixed(4)} ETH</span>
         </div>
       )}
     </div>

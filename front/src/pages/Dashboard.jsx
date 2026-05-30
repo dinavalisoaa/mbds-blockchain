@@ -4,108 +4,148 @@ import { fetchAllCampaigns } from '../services/campaigns.js';
 import { txWithdraw, txRefund, txCancelCampaign } from '../services/transactions.js';
 import { useTx } from '../hooks/useTx.js';
 import { CATEGORIES, TX_LABELS } from '../constants.js';
-import { Button, Badge, Alert, ProgressBar, Spinner, EmptyState, Card } from '../components/ui/index.js';
+import { Spinner, Alert } from '../components/ui/index.js';
+import '../styles/Dashboard.css';
 
-function MyCampaignRow({ campaign: c, onAction }) {
+const SEGS = 12;
+
+function SegBar({ percent, status }) {
+  const filled = Math.round((Math.min(percent, 100) / 100) * SEGS);
+  return (
+    <div className="dash2-segs">
+      {Array.from({ length: SEGS }).map((_, i) => (
+        <div
+          key={i}
+          className={`dash2-seg ${i < filled ? 'dash2-seg--on' : 'dash2-seg--off'}`}
+          style={i < filled && status === 'failed' ? { background: 'var(--red)' } : undefined}
+        />
+      ))}
+    </div>
+  );
+}
+
+function StatusCell({ status }) {
+  const labels = {
+    active:    'ACTIF',
+    success:   'SUCCÈS',
+    failed:    'ÉCHOUÉ',
+    cancelled: 'ANNULÉ',
+    closed:    'FERMÉ',
+  };
+  return (
+    <div className="dash2-status">
+      <div className={`dash2-dot dash2-dot--${status}`} />
+      <span className={`dash2-status-txt--${status}`}>{labels[status] ?? status.toUpperCase()}</span>
+    </div>
+  );
+}
+
+function ContribBadge({ status }) {
+  const map = {
+    failed:    ['dash2-cbadge--failed',    'ÉCHOUÉ'],
+    success:   ['dash2-cbadge--verified',  'VÉRIFIÉ'],
+    active:    ['dash2-cbadge--pending',   'EN COURS'],
+    cancelled: ['dash2-cbadge--cancelled', 'ANNULÉ'],
+    closed:    ['dash2-cbadge--cancelled', 'FERMÉ'],
+  };
+  const [cls, label] = map[status] ?? ['dash2-cbadge--cancelled', status.toUpperCase()];
+  return <span className={`dash2-cbadge ${cls}`}>{label}</span>;
+}
+
+function CampaignRow({ campaign: c, onAction }) {
   const runTx = useTx();
   const [loading, setLoading] = useState(false);
 
   const run = async (fn, labels) => {
     setLoading(true);
     try { await runTx(fn, labels); await onAction(); }
-    catch { /* toast affiche l'erreur */ }
+    catch { /* toast */ }
     finally { setLoading(false); }
   };
 
+  const shortAddr = `${c.creator.slice(0, 5)}...${c.creator.slice(-3)}`;
+
   return (
-    <div className="dash-row">
-      <div className="dash-row-info">
-        <div className="dash-row-title">{c.title}</div>
-        <div className="dash-row-meta">
-          <span>{c.amountRaisedEth} / {c.goalEth} ETH</span>
-          <span>· {c.progress}%</span>
-          <span>· {c.timeLeft}</span>
-          {c.category !== undefined && <span>· {CATEGORIES[c.category] ?? '—'}</span>}
+    <tr>
+      <td>
+        <div className="dash2-camp-name">{c.title}</div>
+        <div className="dash2-camp-addr">{shortAddr}</div>
+      </td>
+      <td>
+        <div className="dash2-prog-pct" style={{ color: c.status === 'failed' ? 'var(--red)' : 'var(--green)' }}>
+          {c.progress}%
         </div>
-        <div style={{ marginTop: 6 }}>
-          <ProgressBar percent={c.progress} status={c.status} showLabels={false} />
-        </div>
-      </div>
-
-      <div className="dash-row-badge"><Badge status={c.status} /></div>
-
-      <div className="dash-row-actions">
+        <SegBar percent={c.progress} status={c.status} />
+      </td>
+      <td>
+        <span className="dash2-goal">{c.goalEth}</span>
+        <span className="dash2-goal-unit">ETH</span>
+      </td>
+      <td><StatusCell status={c.status} /></td>
+      <td>
         {c.status === 'success' && !c.withdrawn && (
-          <Button variant="primary" size="sm" icon="ti-download" loading={loading}
+          <button className="dash2-btn-withdraw" disabled={loading}
             onClick={() => run(() => txWithdraw(c.id), TX_LABELS.withdraw)}>
-            WITHDRAW
-          </Button>
+            {loading ? <i className="ti ti-loader-2 spinning" /> : 'RETIRER'}
+          </button>
         )}
         {c.status === 'active' && c.amountRaised === 0n && (
-          <Button variant="danger" size="sm" icon="ti-x" loading={loading}
+          <button className="dash2-btn-cancel" disabled={loading}
             onClick={() => run(() => txCancelCampaign(c.id), TX_LABELS.cancelCampaign)}>
-            CANCEL
-          </Button>
+            {loading ? <i className="ti ti-loader-2 spinning" /> : 'ANNULER'}
+          </button>
         )}
         {c.status === 'success' && c.withdrawn && (
-          <span className="dash-withdrawn"><i className="ti ti-circle-check" /> WITHDRAWN</span>
+          <span className="dash2-withdrawn-txt">
+            <i className="ti ti-circle-check" /> RETIRÉ
+          </span>
         )}
-      </div>
-    </div>
+      </td>
+    </tr>
   );
 }
 
-function MyContribRow({ campaign: c, onAction }) {
+function ContribCard({ campaign: c, onAction }) {
   const runTx = useTx();
   const [loading, setLoading] = useState(false);
 
   const run = async (fn, labels) => {
     setLoading(true);
     try { await runTx(fn, labels); await onAction(); }
-    catch { /* toast affiche l'erreur */ }
+    catch { /* toast */ }
     finally { setLoading(false); }
   };
 
+  const shortId = `CAMP #${c.id}`;
+
   return (
-    <div className="dash-row">
-      <div className="dash-row-info">
-        <div className="dash-row-title">{c.title}</div>
-        <div className="dash-row-meta">
-          <span><i className="ti ti-coin" /> MY_CONTRIBUTION: <strong>{c.myContribEth} ETH</strong></span>
-          <span>· GOAL: {c.goalEth} ETH</span>
-        </div>
+    <div className="dash2-contrib-card">
+      <div className="dash2-contrib-top">
+        <span className="dash2-contrib-name">{c.title}</span>
+        <ContribBadge status={c.status} />
       </div>
-
-      <div className="dash-row-badge"><Badge status={c.status} /></div>
-
-      <div className="dash-row-actions">
+      <div className="dash2-contrib-tx">ID: {shortId}</div>
+      <div className="dash2-contrib-bottom">
+        <div>
+          <span className="dash2-contrib-amt">{c.myContribEth}</span>
+          <span className="dash2-contrib-amt-unit">ETH</span>
+        </div>
         {c.status === 'failed' && c.myContrib > 0n && (
-          <Button variant="ghost" size="sm" icon="ti-receipt-refund" loading={loading}
+          <button className="dash2-btn-refund" disabled={loading}
             onClick={() => run(() => txRefund(c.id), TX_LABELS.refund)}>
-            REFUND
-          </Button>
+            {loading ? <i className="ti ti-loader-2 spinning" /> : 'REMBOURSER'}
+          </button>
         )}
         {c.status === 'success' && (
-          <span className="dash-withdrawn"><i className="ti ti-circle-check" /> GOAL_REACHED</span>
+          <i className="ti ti-circle-check dash2-check" />
         )}
         {c.status === 'active' && (
-          <span style={{ fontSize: 11, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            <i className="ti ti-clock" /> IN_PROGRESS
-          </span>
+          <i className="ti ti-loader-2 dash2-spin" />
+        )}
+        {(c.status === 'cancelled' || c.status === 'closed') && (
+          <i className="ti ti-ban" style={{ color: 'var(--text-muted)', fontSize: 16 }} />
         )}
       </div>
-    </div>
-  );
-}
-
-function StatCard({ icon, value, label, color = 'var(--text)' }) {
-  return (
-    <div className="stat-card">
-      <div className="stat-value" style={{ color }}>
-        <i className={`ti ${icon}`} style={{ fontSize: 16, marginRight: 6, opacity: 0.7 }} />
-        {value}
-      </div>
-      <div className="stat-label">{label}</div>
     </div>
   );
 }
@@ -127,69 +167,129 @@ export default function Dashboard({ wallet }) {
   if (!wallet.connected) return <Navigate to="/" replace />;
 
   const addr = wallet.address?.toLowerCase();
+  const short = wallet.address
+    ? `${wallet.address.slice(0, 5)}...${wallet.address.slice(-4)}_ROOT`
+    : '';
 
   const myCampaigns = campaigns.filter(c => c.creator.toLowerCase() === addr);
   const myContribs  = campaigns.filter(c => c.myContrib > 0n && c.creator.toLowerCase() !== addr);
 
-  const pendingWithdraw = myCampaigns.filter(c => c.status === 'success' && !c.withdrawn).length;
-  const pendingRefund   = myContribs.filter(c  => c.status === 'failed'  && c.myContrib > 0n).length;
-  const totalContrib    = myContribs.reduce((sum, c) => sum + Number(c.myContribEth), 0).toFixed(4);
+  const pendingWithdraw   = myCampaigns.filter(c => c.status === 'success' && !c.withdrawn).length;
+  const pendingRefund     = myContribs.filter(c  => c.status === 'failed'  && c.myContrib > 0n).length;
+  const totalContrib      = myContribs.reduce((sum, c) => sum + Number(c.myContribEth), 0).toFixed(4);
+  const withdrawableEth   = myCampaigns
+    .filter(c => c.status === 'success' && !c.withdrawn)
+    .reduce((s, c) => s + Number(c.amountRaisedEth), 0).toFixed(4);
+  const refundableEth     = myContribs
+    .filter(c => c.status === 'failed' && c.myContrib > 0n)
+    .reduce((s, c) => s + Number(c.myContribEth), 0).toFixed(4);
 
-  if (loading) return <Spinner label="LOADING_DASHBOARD..." />;
+  const activeCampaigns = myCampaigns.filter(c => c.status === 'active').length;
+
+  if (loading) return <Spinner label="CHARGEMENT..." />;
 
   return (
     <div>
-      <h2 className="page-title">DASHBOARD</h2>
+      {/* ── Stats ── */}
+      <div className="dash2-stats">
+        <div className="dash2-stat">
+          <div className="dash2-stat-label">CAMPAGNES CRÉÉES</div>
+          <div className="dash2-stat-value">
+            <span className="dash2-stat-num dash2-stat-num--white">
+              {String(myCampaigns.length).padStart(2, '0')}
+            </span>
+          </div>
+          <div className="dash2-stat-sub">/ {activeCampaigns} ACTIF{activeCampaigns !== 1 ? 'S' : ''}</div>
+        </div>
 
-      <div className="stats-grid">
-        <StatCard icon="ti-rocket"         value={myCampaigns.length}    label="CAMPAIGNS_CREATED" />
-        <StatCard icon="ti-coin"           value={`${totalContrib} ETH`} label="TOTAL_CONTRIBUTED" />
-        <StatCard icon="ti-download"       value={pendingWithdraw}       label="PENDING_WITHDRAWALS"
-          color={pendingWithdraw > 0 ? 'var(--green)' : undefined} />
-        <StatCard icon="ti-receipt-refund" value={pendingRefund}         label="PENDING_REFUNDS"
-          color={pendingRefund > 0 ? 'var(--blue)' : undefined} />
+        <div className="dash2-stat dash2-stat--highlight">
+          <div className="dash2-stat-label">TOTAL CONTRIBUÉ</div>
+          <div className="dash2-stat-value">
+            <span className="dash2-stat-num dash2-stat-num--green">{totalContrib}</span>
+            <span className="dash2-stat-unit">ETH</span>
+          </div>
+        </div>
+
+        <div className={`dash2-stat${pendingWithdraw > 0 ? ' dash2-stat--green' : ''}`}>
+          <div className="dash2-stat-label">RETRAITS DISPONIBLES</div>
+          <div className="dash2-stat-value">
+            <span className="dash2-stat-num dash2-stat-num--green">{withdrawableEth}</span>
+            <span className="dash2-stat-unit">ETH</span>
+          </div>
+        </div>
+
+        <div className={`dash2-stat${pendingRefund > 0 ? ' dash2-stat--red' : ''}`}>
+          <div className="dash2-stat-label">REMBOURSEMENTS DISPONIBLES</div>
+          <div className="dash2-stat-value">
+            <span className="dash2-stat-num dash2-stat-num--red">{refundableEth}</span>
+            <span className="dash2-stat-unit">ETH</span>
+          </div>
+        </div>
       </div>
 
+      {/* ── Alerts ── */}
       {pendingWithdraw > 0 && (
-        <Alert type="success">
-          <strong>{pendingWithdraw} CAMPAIGN{pendingWithdraw > 1 ? 'S' : ''}</strong> READY_FOR_WITHDRAWAL.
+        <Alert type="success" style={{ marginBottom: 12 }}>
+          <strong>{pendingWithdraw} CAMPAGNE{pendingWithdraw > 1 ? 'S' : ''}</strong> PRÊTE{pendingWithdraw > 1 ? 'S' : ''} POUR RETRAIT.
         </Alert>
       )}
       {pendingRefund > 0 && (
-        <Alert type="info">
-          <strong>{pendingRefund} REFUND{pendingRefund > 1 ? 'S' : ''}</strong> AVAILABLE.
+        <Alert type="info" style={{ marginBottom: 12 }}>
+          <strong>{pendingRefund} REMBOURSEMENT{pendingRefund > 1 ? 'S' : ''}</strong> DISPONIBLE{pendingRefund > 1 ? 'S' : ''}.
         </Alert>
       )}
 
-      <div className="section-header" style={{ marginTop: '1.5rem' }}>
-        <span className="section-title">
-          MY_CAMPAIGNS
-          <span className="section-count">{myCampaigns.length}</span>
-        </span>
+      {/* ── Body: two columns ── */}
+      <div className="dash2-body">
+
+        {/* LEFT: My Campaigns table */}
+        <div>
+          <div className="dash2-sec-header">
+            <span className="dash2-sec-title">MES CAMPAGNES</span>
+            <span className="dash2-sec-addr">{short}</span>
+          </div>
+          <div className="dash2-table-wrap">
+            {myCampaigns.length === 0 ? (
+              <div className="dash2-empty">AUCUNE CAMPAGNE CRÉÉE</div>
+            ) : (
+              <table className="dash2-table">
+                <thead>
+                  <tr>
+                    <th>CAMPAGNE</th>
+                    <th>PROGRESSION</th>
+                    <th>OBJECTIF</th>
+                    <th>STATUT</th>
+                    <th>ACTION</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {myCampaigns.map(c => (
+                    <CampaignRow key={c.id} campaign={c} onAction={load} />
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT: Contributions */}
+        <div>
+          <div className="dash2-sec-header">
+            <span className="dash2-sec-title">CONTRIBUTIONS</span>
+            <span className="dash2-sec-link">HISTORIQUE</span>
+          </div>
+          <div className="dash2-contribs-wrap">
+            {myContribs.length === 0 ? (
+              <div className="dash2-empty">AUCUNE CONTRIBUTION</div>
+            ) : (
+              myContribs.map(c => (
+                <ContribCard key={c.id} campaign={c} onAction={load} />
+              ))
+            )}
+          </div>
+        </div>
+
       </div>
-
-      <Card>
-        {myCampaigns.length === 0
-          ? <EmptyState icon="ti-rocket" title="NO_CAMPAIGNS_CREATED"
-              subtitle="GO_TO_HOME_TO_DEPLOY_YOUR_FIRST_CAMPAIGN." />
-          : myCampaigns.map(c => <MyCampaignRow key={c.id} campaign={c} onAction={load} />)
-        }
-      </Card>
-
-      <div className="section-header" style={{ marginTop: '1.5rem' }}>
-        <span className="section-title">
-          MY_CONTRIBUTIONS
-          <span className="section-count">{myContribs.length}</span>
-        </span>
-      </div>
-
-      <Card>
-        {myContribs.length === 0
-          ? <EmptyState icon="ti-heart" title="NO_CONTRIBUTIONS"
-              subtitle="YOU_HAVE_NOT_CONTRIBUTED_TO_ANY_CAMPAIGN." />
-          : myContribs.map(c => <MyContribRow key={c.id} campaign={c} onAction={load} />)
-        }
-      </Card>
     </div>
   );
 }
