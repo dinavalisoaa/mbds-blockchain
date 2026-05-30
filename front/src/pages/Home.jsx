@@ -47,7 +47,8 @@ export default function Home({ wallet, diagnostic }) {
   const [campaigns,   setCampaigns]   = useState([]);
   const [loading,     setLoading]     = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [catFilter,   setCatFilter]   = useState(null); // null = ALL, number = category index
+  const [catFilter,    setCatFilter]    = useState(null);  // null = ALL, number = category index
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'success' | 'failed' | 'cancelled'
   const refundedIds = useRef(new Set());
 
   const loadCampaigns = useCallback(async (addr = wallet.address) => {
@@ -83,6 +84,7 @@ export default function Home({ wallet, diagnostic }) {
   }, [campaigns, wallet.connected, wallet.address]);
 
   const filtered = campaigns
+    .filter(c => statusFilter === 'all' || c.status === statusFilter)
     .filter(c => catFilter === null || c.category === catFilter)
     .filter(c => !searchQuery || c.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
@@ -137,6 +139,18 @@ export default function Home({ wallet, diagnostic }) {
           />
         </div>
 
+        {/* Status filter dropdown */}
+        <div className="select-wrap" style={{ minWidth: 160 }}>
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+            <option value="all">ALL_STATUS</option>
+            <option value="active">ACTIVE</option>
+            <option value="success">SUCCESS</option>
+            <option value="failed">FAILED</option>
+            <option value="cancelled">CANCELLED</option>
+          </select>
+          <i className="ti ti-chevron-down select-chevron" />
+        </div>
+
         {/* ALL + real categories */}
         <button
           className={`filter-chip${catFilter === null ? ' active' : ''}`}
@@ -168,7 +182,9 @@ export default function Home({ wallet, diagnostic }) {
           : <EmptyState title="CONNECT_WALLET_TO_VIEW_CAMPAIGNS." />
       ) : !filtered.length ? (
         <EmptyState icon="ti-terminal" title="NO_CAMPAIGNS_FOUND" subtitle={
-          catFilter !== null ? 'NO_CAMPAIGNS_IN_CATEGORY.' : 'CREATE_THE_FIRST_ONE.'
+          statusFilter !== 'all' ? `NO_${statusFilter.toUpperCase()}_CAMPAIGNS.`
+          : catFilter !== null   ? 'NO_CAMPAIGNS_IN_CATEGORY.'
+          : 'CREATE_THE_FIRST_ONE.'
         } />
       ) : (
         <div className="campaigns-grid">
