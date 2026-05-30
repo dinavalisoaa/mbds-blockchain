@@ -81,27 +81,33 @@ export default function CampaignCard({ campaign: c, wallet, onAction }) {
 
         {/* Contribute — active only */}
         {c.status === 'active' && (
-          <form className="card-contribute" onSubmit={handleContribute} onClick={e => e.stopPropagation()}>
-            <div className="card-contribute-input-wrap">
-              <input
-                type="text" inputMode="decimal" placeholder="0.00"
-                value={amount}
-                onChange={e => { const v = e.target.value; if (v === '' || /^\d*[.,]?\d*$/.test(v)) setAmount(v); }}
-                disabled={loading || !wallet?.connected}
-              />
-              <span className="card-contribute-suffix">ETH</span>
-            </div>
-            <button
-              type="submit"
-              className="card-contribute-btn"
-              disabled={loading || !wallet?.connected || !amount}
-            >
-              {loading
-                ? <i className="ti ti-loader-2 spinning" />
-                : <i className="ti ti-arrow-right" />
-              }
-            </button>
-          </form>
+          wallet?.connected ? (
+            <form className="card-contribute" onSubmit={handleContribute} onClick={e => e.stopPropagation()}>
+              <div className="card-contribute-input-wrap">
+                <input
+                  type="text" inputMode="decimal" placeholder="0.00"
+                  value={amount}
+                  onChange={e => { const v = e.target.value; if (v === '' || /^\d*[.,]?\d*$/.test(v)) setAmount(v); }}
+                  disabled={loading}
+                />
+                <span className="card-contribute-suffix">ETH</span>
+              </div>
+              <button
+                type="submit"
+                className="card-contribute-btn"
+                disabled={loading || !amount}
+              >
+                {loading
+                  ? <i className="ti ti-loader-2 spinning" />
+                  : <i className="ti ti-arrow-right" />
+                }
+              </button>
+            </form>
+          ) : (
+            <p className="card-connect-hint" onClick={e => e.stopPropagation()}>
+              <i className="ti ti-wallet" /> Connectez votre wallet pour contribuer
+            </p>
+          )
         )}
       </div>
     </article>

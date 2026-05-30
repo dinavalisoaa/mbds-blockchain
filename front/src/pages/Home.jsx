@@ -18,10 +18,10 @@ function LiveTxFeed({ campaigns }) {
 
   const timeAgo = ts => {
     const diff = Math.floor(Date.now() / 1000) - Number(ts);
-    if (diff < 60)    return `${diff}S_AGO`;
-    if (diff < 3600)  return `${Math.floor(diff / 60)}M_AGO`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}H_AGO`;
-    return `${Math.floor(diff / 86400)}D_AGO`;
+    if (diff < 60)    return `il y a ${diff}s`;
+    if (diff < 3600)  return `il y a ${Math.floor(diff / 60)} min`;
+    if (diff < 86400) return `il y a ${Math.floor(diff / 3600)}h`;
+    return `il y a ${Math.floor(diff / 86400)}j`;
   };
 
   const sorted     = [...campaigns].sort((a, b) => Number(b.createdAt) - Number(a.createdAt));
@@ -40,9 +40,9 @@ function LiveTxFeed({ campaigns }) {
   return (
     <div className="tx-feed">
       <div className="tx-feed-header">
-        <span className="tx-feed-title">LIVE_TRANSACTION_FEED_SEPOLIA</span>
-        <span className="tx-feed-syncing">SYNCING...</span>
-        <span className="tx-feed-total">TOTAL: {campaigns.length}_TX</span>
+        <span className="tx-feed-title">Flux de transactions en direct · Sepolia</span>
+        <span className="tx-feed-syncing">Synchronisation...</span>
+        <span className="tx-feed-total">Total : {campaigns.length} tx</span>
       </div>
 
       <div className="tx-feed-filter">
@@ -50,25 +50,25 @@ function LiveTxFeed({ campaigns }) {
           <i className="ti ti-search search-input-icon" />
           <input
             type="text"
-            placeholder="FILTER_BY_CAMPAIGN_TITLE_"
+            placeholder="Filtrer par titre de campagne..."
             value={titleFilter}
             onChange={e => handleTitleFilter(e.target.value)}
           />
         </div>
         {isFiltered && (
           <span style={{ fontSize: 10, color: 'var(--text-dim)', letterSpacing: '0.06em' }}>
-            {filtered.length} RESULT{filtered.length !== 1 ? 'S' : ''}
+            {filtered.length} résultat{filtered.length !== 1 ? 's' : ''}
           </span>
         )}
       </div>
 
       {displayed.length === 0 ? (
-        <div className="tx-feed-empty">NO_TRANSACTIONS_FOUND</div>
+        <div className="tx-feed-empty">Aucune transaction trouvée</div>
       ) : (
         displayed.map(c => (
           <div key={c.id} className="tx-feed-row">
             <span className="tx-feed-addr">{c.creatorShort}</span>
-            <span className="tx-feed-action">CAMPAIGN_CREATED: {c.title}</span>
+            <span className="tx-feed-action">Campagne créée : {c.title}</span>
             <span className="tx-feed-time">{timeAgo(c.createdAt)}</span>
           </div>
         ))
@@ -187,23 +187,24 @@ export default function Home({ wallet, diagnostic }) {
         <div className="hero-left">
           <div className="hero-status-badge">
             <span className="hero-status-dot" />
-            NETWORK_STATUS: SEPOLIA_TESTNET_STABLE
+            Réseau actif · Sepolia Testnet
           </div>
           <h1 className="hero-heading">
-            IMMUTABLE FUNDRAISING FOR THE{' '}
-            <span className="accent">NEXT GENERATION</span>
-            {' '}OF DAPPS.
+            Financez vos projets avec la{' '}
+            <span className="accent">puissance de la blockchain</span>
+            {' '}— sans intermédiaire.
           </h1>
           <p className="hero-subtext">
-            DEPLOY TRANSPARENT, TRUSTLESS CROWDFUNDING CAMPAIGNS ON ETHEREUM SEPOLIA.
-            FUNDS LOCKED IN SMART CONTRACTS — RELEASED ONLY ON SUCCESS.
+            Lancez votre campagne en quelques clics. Vos fonds sont sécurisés par un smart contract Ethereum :
+            chaque contributeur est protégé, chaque euro est tracé, et les fonds ne sont débloqués qu'en cas de succès.
+            La transparence absolue, par design.
           </p>
           <div className="hero-ctas">
             <Button variant="primary" icon="ti-rocket" onClick={() => navigate('/create')}>
-              START_CAMPAIGN_V1
+              Lancer ma campagne
             </Button>
             <Button variant="outline" icon="ti-chart-bar">
-              VIEW_PROTOCOL_STATS
+              Voir les statistiques
             </Button>
           </div>
         </div>
@@ -227,31 +228,31 @@ export default function Home({ wallet, diagnostic }) {
             <i className="ti ti-search search-input-icon" />
             <input
               type="text"
-              placeholder="QUERY_CONTRACT_OR_NAME_"
+              placeholder="Rechercher une campagne..."
               value={searchQuery}
               onChange={e => handleSearch(e.target.value)}
             />
           </div>
           <div className="select-wrap" style={{ minWidth: 150 }}>
             <select value={statusFilter} onChange={e => handleStatusChange(e.target.value)}>
-              <option value="all">ALL_STATUS</option>
-              <option value="active">ACTIVE</option>
-              <option value="success">SUCCESS</option>
-              <option value="failed">FAILED</option>
-              <option value="cancelled">CANCELLED</option>
+              <option value="all">Tous les statuts</option>
+              <option value="active">Actif</option>
+              <option value="success">Succès</option>
+              <option value="failed">Échoué</option>
+              <option value="cancelled">Annulé</option>
             </select>
             <i className="ti ti-chevron-down select-chevron" />
           </div>
           <Button variant="ghost" icon="ti-refresh" loading={loading}
             onClick={() => loadCampaigns()}>
-            REFRESH
+            Actualiser
           </Button>
         </div>
 
         {/* Row 2 : date ranges side by side */}
         <div className="filter-row-dates">
           <div className="date-filter-group">
-            <span className="date-filter-group-label">CREATED_BETWEEN</span>
+            <span className="date-filter-group-label">Créé entre</span>
             <input type="date" className="date-filter-input"
               value={createdFrom} onChange={e => handleCreatedFrom(e.target.value)} />
             <span className="date-filter-sep">→</span>
@@ -260,7 +261,7 @@ export default function Home({ wallet, diagnostic }) {
           </div>
           <div className="date-filter-divider" />
           <div className="date-filter-group">
-            <span className="date-filter-group-label">DEADLINE_BETWEEN</span>
+            <span className="date-filter-group-label">Échéance entre</span>
             <input type="date" className="date-filter-input"
               value={deadlineFrom} onChange={e => handleDeadlineFrom(e.target.value)} />
             <span className="date-filter-sep">→</span>
@@ -269,7 +270,7 @@ export default function Home({ wallet, diagnostic }) {
           </div>
           {hasDateFilter && (
             <button className="date-filter-clear" onClick={clearDates}>
-              <i className="ti ti-x" /> CLEAR_DATES
+              <i className="ti ti-x" /> Effacer les dates
             </button>
           )}
         </div>
@@ -279,7 +280,7 @@ export default function Home({ wallet, diagnostic }) {
           <button
             className={`filter-chip${catFilter === null ? ' active' : ''}`}
             onClick={() => handleCatChange(null)}
-          >ALL</button>
+          >Tous</button>
           {CATEGORIES.map((cat, i) => (
             <button key={i}
               className={`filter-chip${catFilter === i ? ' active' : ''}`}
@@ -292,15 +293,13 @@ export default function Home({ wallet, diagnostic }) {
 
       {/* ── Campaign grid ── */}
       {loading ? (
-        <Spinner label="LOADING_CAMPAIGNS..." />
-      ) : !wallet.connected ? (
-        <EmptyState title="CONNECT_WALLET_TO_VIEW_CAMPAIGNS." />
+        <Spinner label="Chargement des campagnes..." />
       ) : !filtered.length ? (
-        <EmptyState icon="ti-terminal" title="NO_CAMPAIGNS_FOUND" subtitle={
-          statusFilter !== 'all'  ? `NO_${statusFilter.toUpperCase()}_CAMPAIGNS.`
-          : catFilter !== null    ? 'NO_CAMPAIGNS_IN_CATEGORY.'
-          : hasDateFilter         ? 'NO_CAMPAIGNS_IN_DATE_RANGE.'
-          : 'CREATE_THE_FIRST_ONE.'
+        <EmptyState icon="ti-terminal" title="Aucune campagne trouvée" subtitle={
+          statusFilter !== 'all'  ? `Aucune campagne avec ce statut pour l'instant.`
+          : catFilter !== null    ? 'Aucune campagne dans cette catégorie.'
+          : hasDateFilter         ? 'Aucune campagne sur cet intervalle de dates.'
+          : 'Soyez le premier à lancer une campagne !'
         } />
       ) : (
         <>
@@ -328,7 +327,7 @@ export default function Home({ wallet, diagnostic }) {
                 <i className="ti ti-chevron-right" />
               </button>
               <span className="pagination-info">
-                {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, sorted.length)} / {sorted.length} CAMPAIGNS
+                {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, sorted.length)} / {sorted.length} campagnes
               </span>
             </div>
           )}

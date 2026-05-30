@@ -356,6 +356,10 @@ header {
 }
 .card-contribute-btn:hover:not(:disabled) { background: #16a34a; }
 .card-contribute-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.card-connect-hint {
+  margin-top: 10px; font-size: 10px; color: var(--text-dim);
+  display: flex; align-items: center; gap: 5px; letter-spacing: 0.02em;
+}
 .campaign-title-link {
   font-size: 13px; font-weight: 700; line-height: 1.35;
   color: var(--text); letter-spacing: 0.02em; text-decoration: none;
