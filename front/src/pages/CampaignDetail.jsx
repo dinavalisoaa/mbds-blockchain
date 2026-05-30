@@ -162,7 +162,10 @@ export default function CampaignDetail({ wallet }) {
   const isCapped       = hasAmount && parsedAmount > remaining;
 
   const dd = new Date(Number(c.createdAt) * 1000);
-  const createdDate = `${dd.getFullYear()}.${String(dd.getMonth()+1).padStart(2,'0')}.${String(dd.getDate()).padStart(2,'0')}`;
+  const createdDate = `${String(dd.getDate()).padStart(2,'0')}/${String(dd.getMonth()+1).padStart(2,'0')}/${dd.getFullYear()}`;
+
+  const dl = new Date(Number(c.deadline) * 1000);
+  const deadlineDateTime = `${String(dl.getDate()).padStart(2,'0')}/${String(dl.getMonth()+1).padStart(2,'0')}/${dl.getFullYear()} ${String(dl.getHours()).padStart(2,'0')}:${String(dl.getMinutes()).padStart(2,'0')}`;
 
   const statusLabel = c.status === 'active'    ? 'LIVE_ON_SEPOLIA'
                     : c.status === 'success'   ? 'FUNDED'
@@ -352,6 +355,12 @@ export default function CampaignDetail({ wallet }) {
           <div className="fiche-meta-item">
             <span className="fiche-meta-label">CREATED</span>
             <span className="fiche-meta-val">{createdDate}</span>
+          </div>
+          <div className="fiche-meta-item">
+            <span className="fiche-meta-label">DEADLINE</span>
+            <span className={`fiche-meta-val ${c.status === 'active' ? 'fiche-meta-val--green' : ''}`}>
+              {deadlineDateTime}
+            </span>
           </div>
           <div className="fiche-meta-item fiche-meta-item--full">
             <span className="fiche-meta-label">CREATOR_ADDRESS</span>
