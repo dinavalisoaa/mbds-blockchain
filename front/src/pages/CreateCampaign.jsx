@@ -12,7 +12,7 @@ const EMPTY = { title: '', desc: '', category: '0', goal: '', deadline: '' };
 
 const todayFormatted = () => {
   const d = new Date();
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 };
 
 // Minimum = now + 1h (smart contract requirement)
@@ -24,7 +24,7 @@ const minDeadline = () => {
 const formatDeadlinePreview = iso => {
   if (!iso) return '—';
   const d = new Date(iso);
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 };
 
 const daysUntil = iso => {

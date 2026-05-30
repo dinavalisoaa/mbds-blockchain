@@ -6,9 +6,14 @@ import { useTx } from '../hooks/useTx.js';
 import { TX_LABELS, CATEGORIES } from '../constants.js';
 import { Button, Badge, ProgressBar, Input } from './ui/index.js';
 
-const formatCreated = ts => {
+const formatDate = ts => {
   const d = new Date(Number(ts) * 1000);
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+};
+
+const formatDateTime = ts => {
+  const d = new Date(Number(ts) * 1000);
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 };
 
 export default function CampaignCard({ campaign: c, wallet, onAction }) {
@@ -68,8 +73,16 @@ export default function CampaignCard({ campaign: c, wallet, onAction }) {
         <ProgressBar value={c.amountRaisedEth} goal={c.goalEth} percent={c.progress} status={c.status} />
 
         <div className="campaign-meta-row">
-          <span>REMAINING: {c.timeLeft}</span>
-          <span>CREATED: {formatCreated(c.createdAt)}</span>
+          <span style={{ color: c.status !== 'active' ? 'var(--text-dim)' : undefined }}>
+            {c.status === 'active' ? `ENDS_IN: ${c.timeLeft}` : 'ENDED'}
+          </span>
+          <span>CREATED: {formatDate(c.createdAt)}</span>
+        </div>
+        <div className="campaign-meta-row" style={{ marginTop: 2 }}>
+          <span style={{ color: c.status === 'active' ? 'var(--green)' : 'var(--text-dim)', fontSize: 10 }}>
+            <i className="ti ti-calendar-event" style={{ marginRight: 3 }} />
+            DEADLINE: {formatDateTime(c.deadline)}
+          </span>
         </div>
 
         {c.myContrib > 0n && (
