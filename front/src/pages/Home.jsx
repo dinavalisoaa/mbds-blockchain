@@ -218,77 +218,76 @@ export default function Home({ wallet, diagnostic }) {
         <Alert type="error">{diagnostic.msg}</Alert>
       )}
 
-      {/* ── Search + status + category bar ── */}
-      <div className="search-bar">
-        <span className="search-bar-label">SEARCH_REGISTRY</span>
-        <div className="search-input-wrap">
-          <i className="ti ti-search search-input-icon" />
-          <input
-            type="text"
-            placeholder="QUERY_CONTRACT_OR_NAME_"
-            value={searchQuery}
-            onChange={e => handleSearch(e.target.value)}
-          />
+      {/* ── Filter panel ── */}
+      <div className="filter-panel">
+
+        {/* Row 1 : search + status + refresh */}
+        <div className="filter-row-main">
+          <div className="search-input-wrap" style={{ flex: 1 }}>
+            <i className="ti ti-search search-input-icon" />
+            <input
+              type="text"
+              placeholder="QUERY_CONTRACT_OR_NAME_"
+              value={searchQuery}
+              onChange={e => handleSearch(e.target.value)}
+            />
+          </div>
+          <div className="select-wrap" style={{ minWidth: 150 }}>
+            <select value={statusFilter} onChange={e => handleStatusChange(e.target.value)}>
+              <option value="all">ALL_STATUS</option>
+              <option value="active">ACTIVE</option>
+              <option value="success">SUCCESS</option>
+              <option value="failed">FAILED</option>
+              <option value="cancelled">CANCELLED</option>
+            </select>
+            <i className="ti ti-chevron-down select-chevron" />
+          </div>
+          <Button variant="ghost" icon="ti-refresh" loading={loading}
+            onClick={() => loadCampaigns()}>
+            REFRESH
+          </Button>
         </div>
 
-        <div className="select-wrap" style={{ minWidth: 160 }}>
-          <select value={statusFilter} onChange={e => handleStatusChange(e.target.value)}>
-            <option value="all">ALL_STATUS</option>
-            <option value="active">ACTIVE</option>
-            <option value="success">SUCCESS</option>
-            <option value="failed">FAILED</option>
-            <option value="cancelled">CANCELLED</option>
-          </select>
-          <i className="ti ti-chevron-down select-chevron" />
+        {/* Row 2 : date ranges side by side */}
+        <div className="filter-row-dates">
+          <div className="date-filter-group">
+            <span className="date-filter-group-label">CREATED_BETWEEN</span>
+            <input type="date" className="date-filter-input"
+              value={createdFrom} onChange={e => handleCreatedFrom(e.target.value)} />
+            <span className="date-filter-sep">→</span>
+            <input type="date" className="date-filter-input"
+              value={createdTo} onChange={e => handleCreatedTo(e.target.value)} />
+          </div>
+          <div className="date-filter-divider" />
+          <div className="date-filter-group">
+            <span className="date-filter-group-label">DEADLINE_BETWEEN</span>
+            <input type="date" className="date-filter-input"
+              value={deadlineFrom} onChange={e => handleDeadlineFrom(e.target.value)} />
+            <span className="date-filter-sep">→</span>
+            <input type="date" className="date-filter-input"
+              value={deadlineTo} onChange={e => handleDeadlineTo(e.target.value)} />
+          </div>
+          {hasDateFilter && (
+            <button className="date-filter-clear" onClick={clearDates}>
+              <i className="ti ti-x" /> CLEAR_DATES
+            </button>
+          )}
         </div>
 
-        <button
-          className={`filter-chip${catFilter === null ? ' active' : ''}`}
-          onClick={() => handleCatChange(null)}
-        >ALL</button>
-        {CATEGORIES.map((cat, i) => (
-          <button key={i}
-            className={`filter-chip${catFilter === i ? ' active' : ''}`}
-            onClick={() => handleCatChange(i)}
-          >{cat}</button>
-        ))}
-
-        <button className="sort-btn">
-          <i className="ti ti-sort-descending" />SORT_BY: RECENT_DEPLOYMENTS
-        </button>
-        <Button variant="ghost" icon="ti-refresh" loading={loading}
-          onClick={() => loadCampaigns()}>
-          REFRESH
-        </Button>
-      </div>
-
-      {/* ── Date range filters ── */}
-      <div className="date-filter-bar">
-        <span className="date-filter-label">
-          <i className="ti ti-calendar-search" /> DATE_FILTERS
-        </span>
-        <div className="date-filter-group">
-          <span className="date-filter-group-label">CREATED_BETWEEN</span>
-          <input type="date" className="date-filter-input"
-            value={createdFrom} onChange={e => handleCreatedFrom(e.target.value)} />
-          <span className="date-filter-sep">→</span>
-          <input type="date" className="date-filter-input"
-            value={createdTo} onChange={e => handleCreatedTo(e.target.value)} />
+        {/* Row 3 : category chips */}
+        <div className="filter-row-cats">
+          <button
+            className={`filter-chip${catFilter === null ? ' active' : ''}`}
+            onClick={() => handleCatChange(null)}
+          >ALL</button>
+          {CATEGORIES.map((cat, i) => (
+            <button key={i}
+              className={`filter-chip${catFilter === i ? ' active' : ''}`}
+              onClick={() => handleCatChange(i)}
+            >{cat}</button>
+          ))}
         </div>
-        <div className="date-filter-divider" />
-        <div className="date-filter-group">
-          <span className="date-filter-group-label">DEADLINE_BETWEEN</span>
-          <input type="date" className="date-filter-input"
-            value={deadlineFrom} onChange={e => handleDeadlineFrom(e.target.value)} />
-          <span className="date-filter-sep">→</span>
-          <input type="date" className="date-filter-input"
-            value={deadlineTo} onChange={e => handleDeadlineTo(e.target.value)} />
-        </div>
-        {hasDateFilter && (
-          <button className="date-filter-clear" onClick={clearDates}>
-            <i className="ti ti-x" /> CLEAR_DATES
-          </button>
-        )}
+
       </div>
 
       {/* ── Campaign grid ── */}

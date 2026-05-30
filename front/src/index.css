@@ -157,16 +157,17 @@ header {
 }
 
 /* ── Search / filter bar ────────────────────────────────── */
-.search-bar {
-  display: flex; flex-direction: column; gap: 10px;
-  margin-bottom: 1.5rem;
+/* ── Filter panel (search + dates + categories) ─────────── */
+.filter-panel {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 1.5rem;
+  overflow: hidden;
 }
-.search-bar-label {
-  font-size: 10px; font-weight: 600; color: var(--text-muted);
-  text-transform: uppercase; letter-spacing: 0.08em;
-}
-.search-row {
+
+/* Row 1 — search + status + refresh */
+.filter-row-main {
   display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
 }
 .search-input-wrap { position: relative; flex: 1; min-width: 0; }
 .search-input-wrap input { padding-left: 30px; width: 100%; box-sizing: border-box; }
@@ -174,39 +175,28 @@ header {
   position: absolute; left: 9px; top: 50%; transform: translateY(-50%);
   color: var(--text-dim); font-size: 13px; pointer-events: none;
 }
-.search-sort-select { min-width: 150px; flex-shrink: 0; }
-.filter-row {
-  display: flex; align-items: center; gap: 6px;
-  flex-wrap: wrap;
-}
 
-/* ── Date filter bar ────────────────────────────────────── */
-.date-filter-bar {
+/* Row 2 — date ranges */
+.filter-row-dates {
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  padding: 10px 14px; margin-bottom: 1.25rem;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-.date-filter-label {
-  font-size: 10px; font-weight: 700; color: var(--text-muted);
-  text-transform: uppercase; letter-spacing: 0.08em;
-  display: flex; align-items: center; gap: 5px; white-space: nowrap; flex-shrink: 0;
+  padding: 8px 14px; border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
 }
 .date-filter-group {
-  display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;
+  display: flex; align-items: center; gap: 6px;
 }
 .date-filter-group-label {
   font-size: 10px; font-weight: 600; color: var(--text-dim);
   text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap;
 }
 .date-filter-input {
-  background: var(--surface-2); border: 1px solid var(--border);
+  background: var(--surface); border: 1px solid var(--border);
   color: var(--text); border-radius: 2px; padding: 4px 8px;
   font-size: 11px; font-family: inherit; outline: none;
   transition: border-color 0.12s; cursor: pointer;
 }
-.date-filter-input:focus  { border-color: var(--green-border); }
-.date-filter-input:hover  { border-color: var(--border-hi); }
+.date-filter-input:focus { border-color: var(--green-border); }
+.date-filter-input:hover { border-color: var(--border-hi); }
 .date-filter-sep {
   font-size: 10px; color: var(--text-dim); flex-shrink: 0;
 }
@@ -222,6 +212,12 @@ header {
   text-transform: uppercase; letter-spacing: 0.06em; margin-left: auto;
 }
 .date-filter-clear:hover { background: rgba(224, 92, 92, 0.1); }
+
+/* Row 3 — category chips */
+.filter-row-cats {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 8px 14px;
+}
 
 /* ── Campaigns grid ─────────────────────────────────────── */
 .campaigns-grid {
