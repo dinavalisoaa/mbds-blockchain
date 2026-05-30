@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ipfsUrl } from '../services/pinata.js';
-import { txContribute } from '../services/transactions.js';
+import { txContribute, txCancelCampaign } from '../services/transactions.js';
 import { useTx } from '../hooks/useTx.js';
 import { CATEGORIES, TX_LABELS } from '../constants.js';
 import { Badge } from './ui/index.js';
@@ -13,6 +13,9 @@ export default function CampaignCard({ campaign: c, wallet, onAction }) {
   const [loading, setLoading] = useState(false);
   const imgUrl = ipfsUrl(c.imageIPFS);
 
+  const isOwner = wallet?.connected &&
+    c.creator?.toLowerCase() === wallet?.address?.toLowerCase();
+
   const handleContribute = async e => {
     e.preventDefault();
     e.stopPropagation();
@@ -22,6 +25,16 @@ export default function CampaignCard({ campaign: c, wallet, onAction }) {
     try {
       await runTx(() => txContribute(c.id, normalized), TX_LABELS.contribute);
       setAmount('');
+      if (onAction) await onAction();
+    } catch { /* toast */ }
+    finally { setLoading(false); }
+  };
+
+  const handleCancel = async e => {
+    e.stopPropagation();
+    setLoading(true);
+    try {
+      await runTx(() => txCancelCampaign(c.id), TX_LABELS.cancelCampaign);
       if (onAction) await onAction();
     } catch { /* toast */ }
     finally { setLoading(false); }
@@ -79,9 +92,26 @@ export default function CampaignCard({ campaign: c, wallet, onAction }) {
           </div>
         )}
 
-        {/* Contribute — active only */}
+        {/* Actions — active only */}
         {c.status === 'active' && (
-          wallet?.connected ? (
+          isOwner ? (
+            c.amountRaised === 0n ? (
+              <button
+                className="card-cancel-btn"
+                disabled={loading}
+                onClick={handleCancel}
+              >
+                {loading
+                  ? <i className="ti ti-loader-2 spinning" />
+                  : <><i className="ti ti-ban" /> Annuler la campagne</>
+                }
+              </button>
+            ) : (
+              <p className="card-connect-hint" onClick={e => e.stopPropagation()}>
+                <i className="ti ti-lock" /> Annulation impossible (contributions reçues)
+              </p>
+            )
+          ) : wallet?.connected ? (
             <form className="card-contribute" onSubmit={handleContribute} onClick={e => e.stopPropagation()}>
               <div className="card-contribute-input-wrap">
                 <input
