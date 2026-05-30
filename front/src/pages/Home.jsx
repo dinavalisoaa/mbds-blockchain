@@ -26,13 +26,13 @@ function LiveTxFeed({ campaigns }) {
   return (
     <div className="tx-feed">
       <div className="tx-feed-header">
-        <span className="tx-feed-title">LIVE_TRANSACTION_FEED_SEPOLIA</span>
-        <span className="tx-feed-syncing">SYNCING...</span>
+        <span className="tx-feed-title">FLUX TRANSACTIONS EN DIRECT</span>
+        <span className="tx-feed-syncing">SYNCHRONISATION...</span>
       </div>
       {recent.map((c) => (
         <div key={c.id} className="tx-feed-row">
           <span className="tx-feed-addr">{c.creatorShort}</span>
-          <span className="tx-feed-action">CAMPAIGN_CREATED: {c.title}</span>
+          <span className="tx-feed-action">CAMPAGNE CRÉÉE: {c.title}</span>
           <span className="tx-feed-time">{timeAgo(c.createdAt)}</span>
         </div>
       ))}
@@ -109,15 +109,15 @@ export default function Home({ wallet, diagnostic }) {
         <div className="hero-left">
           <div className="hero-status-badge">
             <span className="hero-status-dot" />
-            NETWORK_STATUS: SEPOLIA_TESTNET_STABLE
+            RÉSEAU: SEPOLIA_TESTNET_STABLE
           </div>
           <h1 className="hero-heading">
-            IMMUTABLE FUNDRAISING FOR THE{" "}
-            <span className="accent">NEXT GENERATION</span> OF DAPPS.
+            FINANCEMENT IMMUABLE POUR LA{" "}
+            <span className="accent">PROCHAINE GÉNÉRATION</span> DE DAPPS.
           </h1>
           <p className="hero-subtext">
-            DEPLOY TRANSPARENT, TRUSTLESS CROWDFUNDING CAMPAIGNS ON ETHEREUM
-            SEPOLIA. FUNDS LOCKED IN SMART CONTRACTS — RELEASED ONLY ON SUCCESS.
+            DÉPLOYEZ DES CAMPAGNES DE FINANCEMENT TRANSPARENTES SUR ETHEREUM
+            SEPOLIA. FONDS BLOQUÉS DANS DES CONTRATS INTELLIGENTS — LIBÉRÉS UNIQUEMENT EN CAS DE SUCCÈS.
           </p>
           <div className="hero-ctas">
             <Button
@@ -125,10 +125,10 @@ export default function Home({ wallet, diagnostic }) {
               icon="ti-rocket"
               onClick={() => navigate("/create")}
             >
-              START_CAMPAIGN_V1
+              LANCER UNE CAMPAGNE
             </Button>
             <Button variant="outline" icon="ti-chart-bar">
-              VIEW_PROTOCOL_STATS
+              VOIR LES STATISTIQUES
             </Button>
           </div>
         </div>
@@ -149,7 +149,7 @@ export default function Home({ wallet, diagnostic }) {
 
       {/* ── Search + filter bar ── */}
       <div className="search-bar">
-        <span className="search-bar-label">SEARCH_REGISTRY</span>
+        <span className="search-bar-label">RECHERCHER</span>
 
         {/* Row 1: input + sort + refresh */}
         <div className="search-row">
@@ -167,12 +167,12 @@ export default function Home({ wallet, diagnostic }) {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
-              <option value="all">ALL_STATUS</option>
-              <option value="active">ACTIVE</option>
-              <option value="success">FUNDED</option>
-              <option value="closed">CLOSED</option>
-              <option value="failed">FAILED</option>
-              <option value="cancelled">CANCELLED</option>
+              <option value="all">TOUS LES STATUTS</option>
+              <option value="active">ACTIF</option>
+              <option value="success">FINANCÉ</option>
+              <option value="closed">FERMÉ</option>
+              <option value="failed">ÉCHOUÉ</option>
+              <option value="cancelled">ANNULÉ</option>
             </select>
             <i className="ti ti-chevron-down select-chevron" />
           </div>
@@ -183,7 +183,7 @@ export default function Home({ wallet, diagnostic }) {
             disabled={!wallet.connected}
             onClick={() => loadCampaigns()}
           >
-            REFRESH
+            ACTUALISER
           </Button>
         </div>
 
@@ -193,7 +193,7 @@ export default function Home({ wallet, diagnostic }) {
             className={`filter-chip${catFilter === null ? " active" : ""}`}
             onClick={() => setCatFilter(null)}
           >
-            ALL
+            TOUS
           </button>
           {CATEGORIES.map((cat, i) => (
             <button
@@ -209,17 +209,17 @@ export default function Home({ wallet, diagnostic }) {
 
       {/* ── Campaign grid ── */}
       {loading ? (
-        <Spinner label="LOADING_CAMPAIGNS..." />
+        <Spinner label="CHARGEMENT..." />
       ) : !filtered.length ? (
         <EmptyState
           icon="ti-terminal"
-          title="NO_CAMPAIGNS_FOUND"
+          title="AUCUNE CAMPAGNE"
           subtitle={
             statusFilter !== "all"
-              ? `NO_${statusFilter.toUpperCase()}_CAMPAIGNS.`
+              ? `AUCUNE CAMPAGNE ${statusFilter.toUpperCase()}.`
               : catFilter !== null
-              ? "NO_CAMPAIGNS_IN_CATEGORY."
-              : "CREATE_THE_FIRST_ONE."
+              ? "AUCUNE CAMPAGNE DANS CETTE CATÉGORIE."
+              : "CRÉEZ LA PREMIÈRE."
           }
         />
       ) : (
