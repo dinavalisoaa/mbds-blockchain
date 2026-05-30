@@ -53,10 +53,9 @@ export default function Home({ wallet, diagnostic }) {
 
   const loadCampaigns = useCallback(
     async (addr = wallet.address) => {
-      if (!addr) return;
       setLoading(true);
       try {
-        setCampaigns(await fetchAllCampaigns(addr));
+        setCampaigns(await fetchAllCampaigns(addr || null));
       } catch (e) {
         console.error(e);
       } finally {
@@ -67,8 +66,7 @@ export default function Home({ wallet, diagnostic }) {
   );
 
   useEffect(() => {
-    if (wallet.connected) loadCampaigns();
-    else setCampaigns([]);
+    loadCampaigns();
   }, [wallet.connected, wallet.address]);
 
   useEffect(() => {
@@ -144,6 +142,11 @@ export default function Home({ wallet, diagnostic }) {
         </div>
       </section>
 
+      {/* ── Contract diagnostic (only when error) ── */}
+      {diagnostic && !diagnostic.ok && (
+        <Alert type="error">{diagnostic.msg}</Alert>
+      )}
+
       {/* ── Search + filter bar ── */}
       <div className="search-bar">
         <span className="search-bar-label">SEARCH_REGISTRY</span>
@@ -207,14 +210,6 @@ export default function Home({ wallet, diagnostic }) {
       {/* ── Campaign grid ── */}
       {loading ? (
         <Spinner label="LOADING_CAMPAIGNS..." />
-      ) : !wallet.connected ? (
-        diagnostic ? (
-          <Alert type={diagnostic.ok ? "success" : "error"}>
-            {diagnostic.msg}
-          </Alert>
-        ) : (
-          <EmptyState title="CONNECT_WALLET_TO_VIEW_CAMPAIGNS." />
-        )
       ) : !filtered.length ? (
         <EmptyState
           icon="ti-terminal"
