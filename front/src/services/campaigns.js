@@ -33,10 +33,11 @@ function normalize(id, raw) {
   const expired     = now >= raw.deadline;
   const goalReached = raw.amountRaised >= raw.goal;
 
-  const status = !raw.exists ? 'cancelled'
-               : !expired    ? 'active'
-               : goalReached ? 'success'
-               :               'failed';
+  const status = !raw.exists              ? 'cancelled'
+               : goalReached && raw.withdrawn ? 'closed'
+               : goalReached               ? 'success'
+               : expired                   ? 'failed'
+               :                             'active';
 
   const progress = raw.goal > 0n
     ? Math.min(100, Number((raw.amountRaised * 100n) / raw.goal))
@@ -66,20 +67,22 @@ function normalize(id, raw) {
   };
 }
 
-export async function fetchCampaignById(id) {
+export async function fetchCampaignById(id, userAddr = null) {
   const numId = Number(id);
   const [raw, contributorCount] = await Promise.all([
     readContract.campaigns(numId),
     readContract.getContributorCount(numId).catch(() => 0n),
   ]);
-  // Zero-address means the ID was never created
   if (raw.creator === '0x0000000000000000000000000000000000000000') {
     throw new Error('Campagne introuvable');
   }
-  return {
-    ...normalize(numId, raw),
-    contributorCount: Number(contributorCount),
-  };
+  const campaign = { ...normalize(numId, raw), contributorCount: Number(contributorCount) };
+  if (userAddr) {
+    const contrib        = await readContract.getContribution(numId, userAddr);
+    campaign.myContrib    = contrib;
+    campaign.myContribEth = fmtEth(contrib);
+  }
+  return campaign;
 }
 
 export async function fetchContributions(id) {

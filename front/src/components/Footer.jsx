@@ -9,7 +9,7 @@ export default function Footer() {
             background: 'var(--green)', display: 'inline-block',
             boxShadow: '0 0 6px var(--green)',
           }} />
-          STATUS: OPERATIONAL
+          STATUT: OPÉRATIONNEL
         </span>
       </div>
       <div className="footer-right">
@@ -19,8 +19,8 @@ export default function Footer() {
           rel="noopener noreferrer"
           className="footer-link"
         >ETHERSCAN</a>
-        <a href="#" className="footer-link">SMART_CONTRACT</a>
-        <a href="#" className="footer-link">PRIVACY</a>
+        <a href="#" className="footer-link">CONTRAT</a>
+        <a href="#" className="footer-link">CONFIDENTIALITÉ</a>
         <span className="footer-copy">© 2026 ETHERFUND</span>
       </div>
     </footer>

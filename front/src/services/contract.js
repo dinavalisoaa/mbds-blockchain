@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 
-export const CONTRACT_ADDRESS = "0xcb78c479cE2759980A2A8dC7B3c178368Def9656"; // '0xc47D195D322ab32856C45a3F7C20DEc618077d25';
+export const CONTRACT_ADDRESS = "0xbD419983facC52271419189eF287042e15EDCB69"; // '0xc47D195D322ab32856C45a3F7C20DEc618077d25';
 
 export const ABI = [
   // ── State variables ───────────────────────────────────────
@@ -32,7 +32,6 @@ export const ABI = [
   "function getCampaignsByCreator(address creator) view returns (uint256[])",
   "function getGlobalStats() view returns (uint256 total, uint256 active, uint256 totalRaised)",
   "function getCampaignBatch(uint256[] ids) view returns (tuple(address creator, string title, string description, string imageIPFS, uint8 category, uint256 goal, uint256 createdAt, uint256 deadline, uint256 amountRaised, bool withdrawn, bool exists)[])",
-  "function getTopContributors(uint256 id, uint256 n) view returns (address[] addrs, uint256[] amounts)",
   "function getAllCampaignIds() view returns (uint256[])",
   "function getActiveCampaignIds() view returns (uint256[])",
   "function getCampaignsByCategory(uint8 category) view returns (uint256[])",

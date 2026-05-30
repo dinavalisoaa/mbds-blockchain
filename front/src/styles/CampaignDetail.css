@@ -55,6 +55,44 @@
   text-transform: uppercase;
 }
 
+/* ── Log tabs ────────────────────────────────────────────────── */
+.fiche-log-tabs {
+  display: flex;
+  gap: 4px;
+}
+.fiche-log-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.fiche-log-tab:hover { color: var(--text-muted); border-color: var(--border-hi); }
+.fiche-log-tab--active {
+  background: var(--green-dim);
+  border-color: var(--green-border);
+  color: var(--green);
+}
+.fiche-log-tab-count {
+  background: var(--green);
+  color: #000;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 20px;
+  line-height: 1.4;
+}
+
 /* Cancel warning — red notice above the cancel button */
 .fiche-cancel-notice {
   display: flex;
@@ -106,4 +144,99 @@
 .fiche-share-url em {
   color: var(--text);
   font-style: normal;
+}
+
+/* ── Edit panel ──────────────────────────────────────────────── */
+.fiche-edit-panel {
+  margin-top: 1.5rem;
+  border: 1px solid var(--green-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.fiche-edit-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.85rem 1.25rem;
+  background: var(--green-dim);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--green);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.fiche-edit-toggle:hover { background: var(--green-border); }
+
+.fiche-edit-body {
+  padding: 1.5rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+/* Reuse detail-field from CreateCampaign.css inside the edit body */
+.fiche-edit-body .detail-field { margin-bottom: 14px; }
+.fiche-edit-body .detail-field label {
+  font-size: 10px; font-weight: 600; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: 0.1em;
+}
+.fiche-edit-body .detail-field input,
+.fiche-edit-body .detail-field textarea {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: inherit; font-size: 12px;
+  padding: 9px 11px;
+  width: 100%; outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+.fiche-edit-body .detail-field input:focus,
+.fiche-edit-body .detail-field textarea:focus { border-color: var(--green); }
+.fiche-edit-body .detail-field textarea { resize: vertical; min-height: 96px; line-height: 1.6; }
+
+.fiche-edit-section-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--green);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.fiche-edit-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 1rem 0;
+}
+.fiche-edit-meta-locked {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  padding: 0.5rem 0;
+  margin-bottom: 14px;
+}
+
+/* Ghost variant for extend button */
+.detail-cta-btn--ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-hi);
+}
+.detail-cta-btn--ghost:hover:not(:disabled) {
+  background: var(--green-dim);
+  color: var(--green);
+  border-color: var(--green-border);
 }

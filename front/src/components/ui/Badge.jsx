@@ -1,9 +1,10 @@
 const LABELS = {
-  active:    'ACTIVE',
-  success:   'SUCCESS',
-  failed:    'FAILED',
-  cancelled: 'CANCELLED',
-  pending:   'PENDING_FINAL',
+  active:    'ACTIF',
+  success:   'FINANCÉ',
+  closed:    'FERMÉ',
+  failed:    'ÉCHOUÉ',
+  cancelled: 'ANNULÉ',
+  pending:   'EN ATTENTE',
 };
 
 export default function Badge({ status }) {

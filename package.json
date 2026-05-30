@@ -10,7 +10,8 @@
     "deploy": "gh-pages -d front/dist",
     "test": "hardhat test",
     "compile": "hardhat compile",
-    "deploy:sepolia": "hardhat run scripts/deploy.cjs --network sepolia"
+    "deploy:sepolia": "hardhat run scripts/deploy.cjs --network sepolia",
+    "seed:sepolia": "hardhat run scripts/seed.cjs --network sepolia"
   },
   "repository": {
     "type": "git",
