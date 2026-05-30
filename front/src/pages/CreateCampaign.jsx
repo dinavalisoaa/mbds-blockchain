@@ -1,5 +1,4 @@
 import { useState, useRef, useCallback } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { txCreateCampaign } from '../services/transactions.js';
 import { uploadToPinata } from '../services/pinata.js';
@@ -9,25 +8,32 @@ import { CATEGORIES, TX_LABELS } from '../constants.js';
 import { Badge } from '../components/ui/index.js';
 import '../styles/CreateCampaign.css';
 
-/* ─────────────────────────────────────────────────────────────
-   Helpers
-───────────────────────────────────────────────────────────── */
-const EMPTY = { title: '', desc: '', category: '0', goal: '', days: '' };
+const EMPTY = { title: '', desc: '', category: '0', goal: '', deadline: '' };
 
 const todayFormatted = () => {
   const d = new Date();
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
 };
 
-const getDeadlineISO = days => {
-  const d = new Date();
-  d.setDate(d.getDate() + (parseInt(days) || 30));
-  return d.toISOString().split('T')[0];
+// Minimum = now + 1h (smart contract requirement)
+const minDeadline = () => {
+  const d = new Date(Date.now() + 3600 * 1000);
+  return d.toISOString().slice(0, 16);
 };
 
-/* ─────────────────────────────────────────────────────────────
-   Image upload sub-component
-───────────────────────────────────────────────────────────── */
+const formatDeadlinePreview = iso => {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+
+const daysUntil = iso => {
+  if (!iso) return '—';
+  const diff = new Date(iso).getTime() - Date.now();
+  if (diff <= 0) return '0';
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+};
+
 function ImageUpload({ preview, onFile, onClear }) {
   const ref = useRef();
 
@@ -65,15 +71,12 @@ function ImageUpload({ preview, onFile, onClear }) {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────
-   CreateCampaign page
-───────────────────────────────────────────────────────────── */
 export default function CreateCampaign({ wallet }) {
   const runTx = useTx();
   const { add: addToast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [fields,     setFields]     = useState(EMPTY);
   const prefill = location.state?.prefill;
 
   const [fields,     setFields]     = useState(prefill ? { ...EMPTY, ...prefill } : EMPTY);
@@ -109,17 +112,14 @@ export default function CreateCampaign({ wallet }) {
         () => txCreateCampaign(
           fields.title, fields.desc, cid,
           fields.category, fields.goal,
-          getDeadlineISO(fields.days)
+          fields.deadline
         ),
         TX_LABELS.createCampaign
       );
       const newId = receipt?.campaignId;
       navigate(newId != null ? `/campaign/${newId}` : '/');
     } catch (e) {
-      addToast({
-        type: 'error',
-        message: e?.reason || e?.shortMessage || e?.message || 'Unexpected error',
-      });
+      addToast({ type: 'error', message: e?.reason || e?.shortMessage || e?.message || 'Unexpected error' });
     } finally {
       setLoading(false);
       setLoadingMsg('');
@@ -132,14 +132,14 @@ export default function CreateCampaign({ wallet }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  /* ── Live preview values ── */
-  const previewTitle = fields.title  || 'UNNAMED_PROJECT';
-  const previewDesc  = fields.desc   || 'Awaiting deployment parameters...';
-  const previewGoal  = fields.goal   || '0.00';
-  const previewDays  = fields.days   || '30';
-  const previewCat   = CATEGORIES[parseInt(fields.category)] ?? 'TECHNOLOGY';
+  const previewTitle    = fields.title || 'UNNAMED_PROJECT';
+  const previewDesc     = fields.desc  || 'Awaiting deployment parameters...';
+  const previewGoal     = fields.goal  || '0.00';
+  const previewDeadline = formatDeadlinePreview(fields.deadline);
+  const previewDaysLeft = daysUntil(fields.deadline);
+  const previewCat      = CATEGORIES[parseInt(fields.category)] ?? 'TECHNOLOGY';
 
-  const canDeploy = wallet.connected && fields.title.trim() && fields.goal.trim() && !loading;
+  const canDeploy = wallet.connected && fields.title.trim() && fields.goal.trim() && fields.deadline && !loading;
 
   return (
     <div className="campaign-detail">
@@ -149,18 +149,18 @@ export default function CreateCampaign({ wallet }) {
 
       <div className="detail-page">
 
-        {/* ════════════════════════════════════════
-            LEFT — Form
-        ════════════════════════════════════════ */}
+        {/* ── LEFT — Form ── */}
         <div className="detail-left">
-
           <div className="detail-panel-header">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
-              <h1 className="detail-panel-title">INITIALIZE_CAMPAIGN</h1>
-              <Badge status="active">NEW</Badge>
+              <h1 className="detail-panel-title">
+                {prefill ? 'REDEPLOY_CAMPAIGN' : 'INITIALIZE_CAMPAIGN'}
+              </h1>
+              <span className={`badge ${prefill ? 'cancelled' : 'active'}`}>
+                {prefill ? 'EDIT' : 'NEW'}
+              </span>
             </div>
             <p className="detail-panel-subtitle">
-              Deploy new crowdfunding smart contract on Sepolia Testnet.
               {prefill
                 ? 'Editing a cancelled campaign. A new contract will be deployed with the updated parameters.'
                 : 'Deploy new crowdfunding smart contract on Sepolia Testnet.'}
@@ -202,7 +202,7 @@ export default function CreateCampaign({ wallet }) {
             />
           </div>
 
-          {/* Row 3 — goal + duration */}
+          {/* Row 3 — goal + deadline */}
           <div className="detail-field-grid">
             <div className="detail-field">
               <label>TARGET_GOAL (ETH)</label>
@@ -217,12 +217,12 @@ export default function CreateCampaign({ wallet }) {
               </div>
             </div>
             <div className="detail-field">
-              <label>STAKING_PERIOD (DAYS)</label>
+              <label>DEADLINE (DATE &amp; TIME)</label>
               <input
-                type="number" min="1" step="1"
-                placeholder="30"
-                value={fields.days}
-                onChange={set('days')}
+                type="datetime-local"
+                min={minDeadline()}
+                value={fields.deadline}
+                onChange={set('deadline')}
               />
             </div>
           </div>
@@ -230,11 +230,7 @@ export default function CreateCampaign({ wallet }) {
           {/* Row 4 — image */}
           <div className="detail-field">
             <label>VISUAL_ASSET</label>
-            <ImageUpload
-              preview={preview}
-              onFile={handleFile}
-              onClear={handleClearImage}
-            />
+            <ImageUpload preview={preview} onFile={handleFile} onClear={handleClearImage} />
           </div>
 
           {/* CTA */}
@@ -249,33 +245,23 @@ export default function CreateCampaign({ wallet }) {
                 : <i className="ti ti-rocket" />}
               {loading
                 ? (loadingMsg || 'LOADING...')
-                : wallet.connected
-                  ? 'DECODE_AND_DEPLOY_CONTRACT'
-                  : 'CONNECT_WALLET_TO_DEPLOY'}
+                : wallet.connected ? 'DECODE_AND_DEPLOY_CONTRACT' : 'CONNECT_WALLET_TO_DEPLOY'}
             </button>
           </div>
         </div>
 
-        {/* ════════════════════════════════════════
-            RIGHT — Live preview
-        ════════════════════════════════════════ */}
+        {/* ── RIGHT — Live preview ── */}
         <div className="detail-right">
-
           <div className="preview-label-row">
             <span className="preview-label-dot" />
             LIVE_CONTRACT_PREVIEW
           </div>
 
-          {/* Preview card */}
           <div className="detail-preview-card">
             <div style={{ position: 'relative' }}>
               {preview
                 ? <img src={preview} alt="preview" className="campaign-card-img" />
-                : (
-                  <div className="campaign-card-img-placeholder">
-                    <i className="ti ti-photo-off" />
-                  </div>
-                )
+                : <div className="campaign-card-img-placeholder"><i className="ti ti-photo-off" /></div>
               }
               <span className="campaign-card-cat-badge">CAT: {previewCat}</span>
               <div className="preview-img-progress-track">
@@ -301,9 +287,15 @@ export default function CreateCampaign({ wallet }) {
                   <div className="preview-stat-value teal">{previewGoal} ETH</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div className="preview-stat-label">TIME_REMAINING</div>
-                  <div className="preview-stat-value">{previewDays} DAYS</div>
+                  <div className="preview-stat-label">DAYS_REMAINING</div>
+                  <div className="preview-stat-value">{previewDaysLeft} DAYS</div>
                 </div>
+              </div>
+
+              <div className="preview-card-divider" />
+
+              <div style={{ fontSize: 10, color: 'var(--text-dim)', letterSpacing: '0.04em' }}>
+                DEADLINE: <span style={{ color: 'var(--text)' }}>{previewDeadline}</span>
               </div>
 
               <div className="preview-card-footer-bar">
@@ -317,20 +309,18 @@ export default function CreateCampaign({ wallet }) {
             </div>
           </div>
 
-          {/* Deployment link */}
           <div className="contract-link-box">
             <div className="contract-link-label">DEPLOYMENT_LINK</div>
             <div className="contract-link-row">
               <i className="ti ti-link" style={{ color: 'var(--green)', flexShrink: 0 }} />
               <span className="contract-link-url">sepolia.ethfund.io/new-campaign</span>
               <button className="contract-copy-btn" onClick={handleCopy} title={copied ? 'Copied!' : 'Copy'}>
-                <i className={`ti ${copied ? 'ti-check' : 'ti-copy'}`}
-                  style={{ color: copied ? 'var(--green)' : undefined }} />
+                <i className={`ti ${copied ? 'ti-check' : 'ti-copy'}`} />
               </button>
             </div>
           </div>
-
         </div>
+
       </div>
     </div>
   );
