@@ -2,3 +2,5 @@
 node_modules/*
 
 front/dist/*
+package-lock.json
+package-lock.json
