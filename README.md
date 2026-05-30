@@ -1,5 +1,10 @@
 # MBDS Blockchain — Crowdfunding DApp
 
+- *ANDRIANIONY Miharizo Kanto*
+- *RAJERISON Lalaina Nancia*
+- *RAKOTONDRAMAKA Asandratra Mitia Ny Aina*
+- *RANDRIAMIFIDY Dina Valisoa*
+
 Crowdfunding platform on Ethereum Sepolia testnet.  
 Smart contract (Solidity) + React frontend.
 
