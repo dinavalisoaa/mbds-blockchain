@@ -33,10 +33,11 @@ function normalize(id, raw) {
   const expired     = now >= raw.deadline;
   const goalReached = raw.amountRaised >= raw.goal;
 
-  const status = !raw.exists ? 'cancelled'
-               : !expired    ? 'active'
-               : goalReached ? 'success'
-               :               'failed';
+  const status = !raw.exists              ? 'cancelled'
+               : goalReached && raw.withdrawn ? 'closed'
+               : goalReached               ? 'success'
+               : expired                   ? 'failed'
+               :                             'active';
 
   const progress = raw.goal > 0n
     ? Math.min(100, Number((raw.amountRaised * 100n) / raw.goal))

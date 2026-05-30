@@ -166,7 +166,8 @@ export default function Home({ wallet, diagnostic }) {
             >
               <option value="all">ALL_STATUS</option>
               <option value="active">ACTIVE</option>
-              <option value="success">SUCCESS</option>
+              <option value="success">FUNDED</option>
+              <option value="closed">CLOSED</option>
               <option value="failed">FAILED</option>
               <option value="cancelled">CANCELLED</option>
             </select>
@@ -229,12 +230,7 @@ export default function Home({ wallet, diagnostic }) {
       ) : (
         <div className="campaigns-grid">
           {filtered.map((c) => (
-            <CampaignCard
-              key={c.id}
-              campaign={c}
-              wallet={wallet}
-              onAction={loadCampaigns}
-            />
+            <CampaignCard key={c.id} campaign={c} wallet={wallet} onAction={loadCampaigns} />
           ))}
         </div>
       )}

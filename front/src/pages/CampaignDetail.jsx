@@ -137,6 +137,7 @@ export default function CampaignDetail({ wallet }) {
 
   const statusLabel = c.status === 'active'    ? 'LIVE_ON_SEPOLIA'
                     : c.status === 'success'   ? 'FUNDED'
+                    : c.status === 'closed'    ? 'CLOSED'
                     : c.status === 'failed'    ? 'FAILED'
                     : 'CANCELLED';
   const nodeLabel = `${c.status.toUpperCase()}_NODE_V1`;
@@ -208,7 +209,7 @@ export default function CampaignDetail({ wallet }) {
           )}
 
           {/* Contribute — active + connected */}
-          {c.status === 'active' && wallet?.connected && !isCreator && (
+          {c.status === 'active' && wallet?.connected && (
             <div className="fiche-contribute">
               <label className="fiche-contribute-label">CONTRIBUTE_AMOUNT</label>
               <div className="fiche-contribute-row">

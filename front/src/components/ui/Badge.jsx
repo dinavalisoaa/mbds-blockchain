@@ -1,6 +1,7 @@
 const LABELS = {
   active:    'ACTIVE',
-  success:   'SUCCESS',
+  success:   'FUNDED',
+  closed:    'CLOSED',
   failed:    'FAILED',
   cancelled: 'CANCELLED',
   pending:   'PENDING_FINAL',
