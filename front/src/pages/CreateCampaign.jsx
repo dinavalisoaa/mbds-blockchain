@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { txCreateCampaign } from '../services/transactions.js';
 import { uploadToPinata } from '../services/pinata.js';
 import { useTx } from '../hooks/useTx.js';
@@ -73,6 +74,9 @@ export default function CreateCampaign({ wallet }) {
   const navigate = useNavigate();
 
   const [fields,     setFields]     = useState(EMPTY);
+  const prefill = location.state?.prefill;
+
+  const [fields,     setFields]     = useState(prefill ? { ...EMPTY, ...prefill } : EMPTY);
   const [imageFile,  setImageFile]  = useState(null);
   const [preview,    setPreview]    = useState(null);
   const [loading,    setLoading]    = useState(false);
@@ -157,6 +161,9 @@ export default function CreateCampaign({ wallet }) {
             </div>
             <p className="detail-panel-subtitle">
               Deploy new crowdfunding smart contract on Sepolia Testnet.
+              {prefill
+                ? 'Editing a cancelled campaign. A new contract will be deployed with the updated parameters.'
+                : 'Deploy new crowdfunding smart contract on Sepolia Testnet.'}
             </p>
           </div>
 

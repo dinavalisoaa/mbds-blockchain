@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { txContribute, txWithdraw, txRefund, txCancelCampaign } from '../services/transactions.js';
 import { ipfsUrl } from '../services/pinata.js';
 import { useTx } from '../hooks/useTx.js';
@@ -13,6 +13,7 @@ const formatCreated = ts => {
 
 export default function CampaignCard({ campaign: c, wallet, onAction }) {
   const runTx = useTx();
+  const navigate = useNavigate();
   const [amount,  setAmount]  = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -106,6 +107,26 @@ export default function CampaignCard({ campaign: c, wallet, onAction }) {
           <Button variant="ghost" icon="ti-receipt-refund" block loading={loading}
             onClick={() => run(() => txRefund(c.id), TX_LABELS.refund)}>
             CLAIM_REFUND
+          </Button>
+        )}
+
+        {c.status === 'cancelled' && isCreator && (
+          <Button
+            variant="outline"
+            icon="ti-edit"
+            block
+            onClick={() => navigate('/create', {
+              state: {
+                prefill: {
+                  title:    c.title,
+                  desc:     c.description,
+                  category: String(c.category),
+                  goal:     c.goalEth,
+                },
+              },
+            })}
+          >
+            EDIT_AND_REDEPLOY
           </Button>
         )}
       </div>
