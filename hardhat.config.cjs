@@ -6,7 +6,7 @@ module.exports = {
   solidity: {
     version: "0.8.20",
     settings: {
-      optimizer: { enabled: true, runs: 200 }, // fixes contract size warning
+      optimizer: { enabled: true, runs: 1 },
     },
   },
   networks: {

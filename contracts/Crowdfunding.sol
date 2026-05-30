@@ -11,19 +11,18 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 ///
 
 contract Crowdfunding is ReentrancyGuard {
-
     struct Campaign {
-        address payable creator;   // Créateur de la campagne
-        string  title;             // Titre affiché dans le front
-        string  description;       // Description courte du projet
-        string  imageIPFS;         // CID IPFS de l'image, ex: "QmXyz..."
-        uint8   category;          // Index de catégorie (0-5)
-        uint256 goal;              // Objectif en wei (1 ETH = 1e18)
+        address payable creator; // Créateur de la campagne
+        string title; // Titre affiché dans le front
+        string description; // Description courte du projet
+        string imageIPFS; // CID IPFS de l'image, ex: "QmXyz..."
+        uint8 category; // Index de catégorie (0-5)
+        uint256 goal; // Objectif en wei (1 ETH = 1e18)
         uint256 createdAt;
-        uint256 deadline;          // Timestamp Unix de fin
-        uint256 amountRaised;      // Montant collecté en wei
-        bool    withdrawn;         // Fonds déjà retirés par le créateur
-        bool    exists;            // Guard contre les IDs inexistants
+        uint256 deadline; // Timestamp Unix de fin
+        uint256 amountRaised; // Montant collecté en wei
+        bool withdrawn; // Fonds déjà retirés par le créateur
+        bool exists; // Guard contre les IDs inexistants
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -31,11 +30,11 @@ contract Crowdfunding is ReentrancyGuard {
     // ─────────────────────────────────────────────────────────────
     uint256 public campaignCount;
 
-    mapping(uint256 => Campaign)                    public  campaigns;
-    mapping(uint256 => mapping(address => uint256)) public  contributions;
-    mapping(uint256 => address[])                   private _contributors;
-    mapping(uint256 => mapping(address => bool))    private _hasContributed;
-    mapping(address => uint256[])                   private _campaignsByCreator;
+    mapping(uint256 => Campaign) public campaigns;
+    mapping(uint256 => mapping(address => uint256)) public contributions;
+    mapping(uint256 => address[]) private _contributors;
+    mapping(uint256 => mapping(address => bool)) private _hasContributed;
+    mapping(address => uint256[]) private _campaignsByCreator;
 
     // ─────────────────────────────────────────────────────────────
     // EVENTS
@@ -43,9 +42,9 @@ contract Crowdfunding is ReentrancyGuard {
     event CampaignCreated(
         uint256 indexed id,
         address indexed creator,
-        string  title,
-        uint8   category,
-        string  imageIPFS,
+        string title,
+        uint8 category,
+        string imageIPFS,
         uint256 goal,
         uint256 createdAt,
         uint256 deadline
@@ -79,19 +78,26 @@ contract Crowdfunding is ReentrancyGuard {
     event CampaignCancelled(uint256 indexed id, address indexed creator);
 
     /// @notice Émis quand un remboursement automatique échoue (destinataire non payable)
-    event RefundFailed(uint256 indexed id, address indexed contributor, uint256 amount);
+    event RefundFailed(
+        uint256 indexed id,
+        address indexed contributor,
+        uint256 amount
+    );
 
-    event DeadlineExtended(uint256 indexed id, address indexed creator, uint256 newDeadline);
+    event DeadlineExtended(
+        uint256 indexed id,
+        address indexed creator,
+        uint256 newDeadline
+    );
     event CampaignMetaUpdated(uint256 indexed id, address indexed creator);
 
     /// @notice Émis quand le créateur publie une mise à jour
     event CampaignUpdate(
         uint256 indexed id,
         address indexed creator,
-        string  message,
+        string message,
         uint256 timestamp
     );
-
 
     modifier campaignExists(uint256 id) {
         require(campaigns[id].exists, "Campagne inexistante");
@@ -106,7 +112,6 @@ contract Crowdfunding is ReentrancyGuard {
         _;
     }
 
-
     /// @notice Crée une nouvelle campagne de crowdfunding
     /// @param title       Titre de la campagne
     /// @param description Description courte du projet (max 1000 caractères)
@@ -116,35 +121,44 @@ contract Crowdfunding is ReentrancyGuard {
     /// @param duration    Durée en secondes (min 1h, max 90 jours)
     /// @return id         Identifiant de la campagne créée
     function createCampaign(
-        string  calldata title,
-        string  calldata description,
-        string  calldata imageIPFS,
-        uint8            category,
-        uint256          goal,
-        uint256          duration
+        string calldata title,
+        string calldata description,
+        string calldata imageIPFS,
+        uint8 category,
+        uint256 goal,
+        uint256 duration
     ) external returns (uint256 id) {
-        require(bytes(title).length > 0,           "Le titre ne peut pas etre vide");
-        require(bytes(title).length <= 100,         "Titre trop long (100 caracteres max)");
-        require(bytes(description).length <= 1000,  "Description trop longue (1000 caracteres max)");
-        require(bytes(imageIPFS).length <= 100,     "CID IPFS invalide (100 caracteres max)");
-        require(goal > 0,                           "L'objectif doit etre superieur a zero");
-        require(duration >= 3600,                   "La duree minimale est 1 heure");
-        require(duration <= 90 days,                "La duree maximale est 90 jours");
+        require(bytes(title).length > 0, "Le titre ne peut pas etre vide");
+        require(
+            bytes(title).length <= 100,
+            "Titre trop long (100 caracteres max)"
+        );
+        require(
+            bytes(description).length <= 1000,
+            "Description trop longue (1000 caracteres max)"
+        );
+        require(
+            bytes(imageIPFS).length <= 100,
+            "CID IPFS invalide (100 caracteres max)"
+        );
+        require(goal > 0, "L'objectif doit etre superieur a zero");
+        require(duration >= 3600, "La duree minimale est 1 heure");
+        require(duration <= 90 days, "La duree maximale est 90 jours");
 
         id = campaignCount++;
 
         campaigns[id] = Campaign({
-            creator:      payable(msg.sender),
-            title:        title,
-            description:  description,
-            imageIPFS:    imageIPFS,
-            category:     category,
-            goal:         goal,
-            createdAt:    block.timestamp,
-            deadline:     block.timestamp + duration,
+            creator: payable(msg.sender),
+            title: title,
+            description: description,
+            imageIPFS: imageIPFS,
+            category: category,
+            goal: goal,
+            createdAt: block.timestamp,
+            deadline: block.timestamp + duration,
             amountRaised: 0,
-            withdrawn:    false,
-            exists:       true
+            withdrawn: false,
+            exists: true
         });
 
         _campaignsByCreator[msg.sender].push(id);
@@ -170,13 +184,13 @@ contract Crowdfunding is ReentrancyGuard {
         Campaign storage c = campaigns[id];
 
         require(block.timestamp < c.deadline, "La campagne est terminee");
-        require(msg.value > 0,                "La contribution doit etre superieure a zero");
-        require(!c.withdrawn,                 "Les fonds ont deja ete retires");
-        require(c.amountRaised < c.goal,      "L'objectif est deja atteint");
+        require(msg.value > 0, "La contribution doit etre superieure a zero");
+        require(!c.withdrawn, "Les fonds ont deja ete retires");
+        require(c.amountRaised < c.goal, "L'objectif est deja atteint");
 
         uint256 remaining = c.goal - c.amountRaised;
-        uint256 accepted  = msg.value > remaining ? remaining : msg.value;
-        uint256 excess    = msg.value - accepted;
+        uint256 accepted = msg.value > remaining ? remaining : msg.value;
+        uint256 excess = msg.value - accepted;
 
         // EFFECTS
         c.amountRaised += accepted;
@@ -204,13 +218,16 @@ contract Crowdfunding is ReentrancyGuard {
     ) external nonReentrant campaignExists(id) onlyCreator(id) {
         Campaign storage c = campaigns[id];
 
-        require(!c.withdrawn,             "Les fonds ont deja ete retires");
-        require(c.amountRaised >= c.goal, "L'objectif n'est pas encore atteint");
+        require(!c.withdrawn, "Les fonds ont deja ete retires");
+        require(
+            c.amountRaised >= c.goal,
+            "L'objectif n'est pas encore atteint"
+        );
 
         uint256 amount = c.amountRaised;
 
         // EFFECTS
-        c.withdrawn    = true;
+        c.withdrawn = true;
         c.amountRaised = 0;
 
         // INTERACTIONS
@@ -226,7 +243,10 @@ contract Crowdfunding is ReentrancyGuard {
         Campaign storage c = campaigns[id];
 
         // CHECKS
-        require(block.timestamp >= c.deadline, "La campagne est encore en cours");
+        require(
+            block.timestamp >= c.deadline,
+            "La campagne est encore en cours"
+        );
         require(
             c.amountRaised < c.goal,
             "L'objectif a ete atteint, pas de remboursement possible"
@@ -250,18 +270,18 @@ contract Crowdfunding is ReentrancyGuard {
     ///         Ne PAS utiliser en production — préférer le pattern Pull (refund individuel).
     ///         Si un transfert échoue, le contributeur peut toujours appeler refund().
     /// @param id Identifiant de la campagne
-    function refundAll(uint256 id)
-        external
-        nonReentrant
-        campaignExists(id)
-        onlyCreator(id)
-    {
+    function refundAll(
+        uint256 id
+    ) external nonReentrant campaignExists(id) onlyCreator(id) {
         Campaign storage c = campaigns[id];
 
         // CHECKS
-        require(block.timestamp >= c.deadline,   "Campagne encore en cours");
-        require(c.amountRaised < c.goal,         "Objectif atteint, pas de remboursement");
-        require(!c.withdrawn,                    "Deja traite");
+        require(block.timestamp >= c.deadline, "Campagne encore en cours");
+        require(
+            c.amountRaised < c.goal,
+            "Objectif atteint, pas de remboursement"
+        );
+        require(!c.withdrawn, "Deja traite");
 
         // EFFECTS — flag avant toute interaction
         c.withdrawn = true;
@@ -269,7 +289,7 @@ contract Crowdfunding is ReentrancyGuard {
         address[] memory contribs = _contributors[id];
 
         for (uint256 i = 0; i < contribs.length; i++) {
-            address addr   = contribs[i];
+            address addr = contribs[i];
             uint256 amount = contributions[id][addr];
 
             if (amount == 0) continue;
@@ -296,8 +316,14 @@ contract Crowdfunding is ReentrancyGuard {
         uint256 id
     ) external campaignExists(id) onlyCreator(id) {
         Campaign storage c = campaigns[id];
-        require(block.timestamp < c.deadline, "Campagne terminee, annulation impossible");
-        require(c.amountRaised == 0,          "Des contributions existent, annulation impossible");
+        require(
+            block.timestamp < c.deadline,
+            "Campagne terminee, annulation impossible"
+        );
+        require(
+            c.amountRaised == 0,
+            "Des contributions existent, annulation impossible"
+        );
 
         c.exists = false;
 
@@ -311,8 +337,11 @@ contract Crowdfunding is ReentrancyGuard {
         uint256 id,
         string calldata message
     ) external campaignExists(id) onlyCreator(id) {
-        require(bytes(message).length > 0,    "Le message ne peut pas etre vide");
-        require(bytes(message).length <= 500, "Message trop long (500 caracteres max)");
+        require(bytes(message).length > 0, "Le message ne peut pas etre vide");
+        require(
+            bytes(message).length <= 500,
+            "Message trop long (500 caracteres max)"
+        );
 
         emit CampaignUpdate(id, msg.sender, message, block.timestamp);
     }
@@ -341,7 +370,12 @@ contract Crowdfunding is ReentrancyGuard {
     /// @return amounts Montants correspondants en wei (0 si remboursé)
     function getContributions(
         uint256 id
-    ) external view campaignExists(id) returns (address[] memory addrs, uint256[] memory amounts) {
+    )
+        external
+        view
+        campaignExists(id)
+        returns (address[] memory addrs, uint256[] memory amounts)
+    {
         addrs = _contributors[id];
         amounts = new uint256[](addrs.length);
         for (uint256 i = 0; i < addrs.length; i++) {
@@ -373,9 +407,9 @@ contract Crowdfunding is ReentrancyGuard {
     ) external view returns (string memory status) {
         Campaign storage c = campaigns[id];
 
-        if (!c.exists)                        return "cancelled";
-        if (block.timestamp < c.deadline)     return "active";
-        if (c.amountRaised >= c.goal)         return "success";
+        if (!c.exists) return "cancelled";
+        if (block.timestamp < c.deadline) return "active";
+        if (c.amountRaised >= c.goal) return "success";
         return "failed";
     }
 
@@ -400,14 +434,18 @@ contract Crowdfunding is ReentrancyGuard {
     function getActiveCampaignIds() external view returns (uint256[] memory) {
         uint256 count = 0;
         for (uint256 i = 0; i < campaignCount; i++) {
-            if (campaigns[i].exists && block.timestamp < campaigns[i].deadline) {
+            if (
+                campaigns[i].exists && block.timestamp < campaigns[i].deadline
+            ) {
                 count++;
             }
         }
         uint256[] memory ids = new uint256[](count);
         uint256 index = 0;
         for (uint256 i = 0; i < campaignCount; i++) {
-            if (campaigns[i].exists && block.timestamp < campaigns[i].deadline) {
+            if (
+                campaigns[i].exists && block.timestamp < campaigns[i].deadline
+            ) {
                 ids[index++] = i;
             }
         }
@@ -457,8 +495,8 @@ contract Crowdfunding is ReentrancyGuard {
     ) external campaignExists(id) onlyCreator(id) {
         Campaign storage c = campaigns[id];
         require(block.timestamp < c.deadline, "Campagne deja terminee");
-        require(extraSeconds > 0,             "Duree supplementaire nulle");
-        require(extraSeconds <= 30 days,      "Extension max 30 jours");
+        require(extraSeconds > 0, "Duree supplementaire nulle");
+        require(extraSeconds <= 30 days, "Extension max 30 jours");
 
         c.deadline += extraSeconds;
         emit DeadlineExtended(id, msg.sender, c.deadline);
@@ -474,12 +512,15 @@ contract Crowdfunding is ReentrancyGuard {
         string calldata imageIPFS
     ) external campaignExists(id) onlyCreator(id) {
         Campaign storage c = campaigns[id];
-        require(c.amountRaised == 0,                   "Modification impossible apres contributions");
-        require(bytes(description).length <= 1000,     "Description trop longue");
-        require(bytes(imageIPFS).length <= 100,        "CID IPFS invalide");
+        require(
+            c.amountRaised == 0,
+            "Modification impossible apres contributions"
+        );
+        require(bytes(description).length <= 1000, "Description trop longue");
+        require(bytes(imageIPFS).length <= 100, "CID IPFS invalide");
 
         c.description = description;
-        c.imageIPFS   = imageIPFS;
+        c.imageIPFS = imageIPFS;
         emit CampaignMetaUpdated(id, msg.sender);
     }
 
@@ -488,12 +529,17 @@ contract Crowdfunding is ReentrancyGuard {
     // ─────────────────────────────────────────────────────────────
 
     /// @notice Indique si une adresse a contribué à une campagne
-    function hasContributed(uint256 id, address addr) external view returns (bool) {
+    function hasContributed(
+        uint256 id,
+        address addr
+    ) external view returns (bool) {
         return _hasContributed[id][addr];
     }
 
     /// @notice Retourne les IDs de toutes les campagnes créées par une adresse
-    function getCampaignsByCreator(address creator) external view returns (uint256[] memory) {
+    function getCampaignsByCreator(
+        address creator
+    ) external view returns (uint256[] memory) {
         return _campaignsByCreator[creator];
     }
 
@@ -501,11 +547,11 @@ contract Crowdfunding is ReentrancyGuard {
     /// @return total       Nombre total de campagnes créées
     /// @return active      Nombre de campagnes actuellement actives
     /// @return totalRaised Total des fonds levés en wei (toutes campagnes)
-    function getGlobalStats() external view returns (
-        uint256 total,
-        uint256 active,
-        uint256 totalRaised
-    ) {
+    function getGlobalStats()
+        external
+        view
+        returns (uint256 total, uint256 active, uint256 totalRaised)
+    {
         total = campaignCount;
         for (uint256 i = 0; i < campaignCount; i++) {
             Campaign storage c = campaigns[i];
@@ -525,40 +571,6 @@ contract Crowdfunding is ReentrancyGuard {
         }
     }
 
-    /// @notice Retourne les top N contributeurs triés par montant décroissant
-    /// @param id Identifiant de la campagne
-    /// @param n  Nombre de contributeurs (0 = tous)
-    function getTopContributors(
-        uint256 id,
-        uint256 n
-    ) external view campaignExists(id) returns (address[] memory addrs, uint256[] memory amounts) {
-        address[] memory allAddrs   = _contributors[id];
-        uint256   len               = allAddrs.length;
-        uint256[] memory allAmounts = new uint256[](len);
-
-        for (uint256 i = 0; i < len; i++) {
-            allAmounts[i] = contributions[id][allAddrs[i]];
-        }
-
-        // Tri à bulles décroissant (view — pas de coût gas hors chaîne)
-        for (uint256 i = 0; i < len; i++) {
-            for (uint256 j = i + 1; j < len; j++) {
-                if (allAmounts[j] > allAmounts[i]) {
-                    (allAmounts[i], allAmounts[j]) = (allAmounts[j], allAmounts[i]);
-                    (allAddrs[i],   allAddrs[j])   = (allAddrs[j],   allAddrs[i]);
-                }
-            }
-        }
-
-        uint256 resultLen = (n == 0 || n > len) ? len : n;
-        addrs   = new address[](resultLen);
-        amounts = new uint256[](resultLen);
-        for (uint256 i = 0; i < resultLen; i++) {
-            addrs[i]   = allAddrs[i];
-            amounts[i] = allAmounts[i];
-        }
-    }
-
     /// @notice Retourne les IDs de campagnes actives filtrées par catégorie
     /// @param category Index de catégorie (0-5)
     function getActiveCampaignsByCategory(
@@ -566,16 +578,22 @@ contract Crowdfunding is ReentrancyGuard {
     ) external view returns (uint256[] memory) {
         uint256 count = 0;
         for (uint256 i = 0; i < campaignCount; i++) {
-            if (campaigns[i].exists && campaigns[i].category == category
-                && block.timestamp < campaigns[i].deadline) {
+            if (
+                campaigns[i].exists &&
+                campaigns[i].category == category &&
+                block.timestamp < campaigns[i].deadline
+            ) {
                 count++;
             }
         }
         uint256[] memory ids = new uint256[](count);
         uint256 index = 0;
         for (uint256 i = 0; i < campaignCount; i++) {
-            if (campaigns[i].exists && campaigns[i].category == category
-                && block.timestamp < campaigns[i].deadline) {
+            if (
+                campaigns[i].exists &&
+                campaigns[i].category == category &&
+                block.timestamp < campaigns[i].deadline
+            ) {
                 ids[index++] = i;
             }
         }
