@@ -180,7 +180,7 @@ mbds-blockchain/
 
 ---
 
-## Troubleshooting
+## Demonstration
 Une vidéo de démonstration est disponible pour illustrer le fonctionnement de la plateforme.
 
 Lien: [Vidéo de démonstration](https://youtu.be/hFjApUvPLj4?si=oOF3I9zPr6a5LgnL)
