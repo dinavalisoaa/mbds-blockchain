@@ -185,6 +185,17 @@ mbds-blockchain/
 #### 2-Liste des transactions
 ![liste transaction](screenshots/home_page/list_transaction.png)
 
+### Page de création de campagne
+![Create campaign page](screenshots/create-campaign-page/create-campaign-page.png)
+
+### Page de détails de campagne
+![Active campaign 1](screenshots/campaign-details-page/campaign-detail-1-active-campaign.png)
+![Active campaign 2](screenshots/campaign-details-page/campaign-detail-2-active-campaign.png)
+![Cancelled campaign](screenshots/campaign-details-page/campaign-detail-cancelled.png)
+![Success contributor view](screenshots/campaign-details-page/campaign-detail-success-contributor.png)
+![Success owner view](screenshots/campaign-details-page/campaign-detail-success-owner.png)
+![Success and withdrew](screenshots/campaign-details-page/campaign-detail-success-withdrew.png)
+
 ### Etherscan
 ![etherscan](screenshots/etherscan_metamask/etherscan.png)
 
