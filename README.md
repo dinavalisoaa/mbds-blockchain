@@ -189,11 +189,20 @@ mbds-blockchain/
 ![Create campaign page](screenshots/create-campaign-page/create-campaign-page.png)
 
 ### Page de détails de campagne
+#### 1-Campagne active
 ![Active campaign 1](screenshots/campaign-details-page/campaign-detail-1-active-campaign.png)
 ![Active campaign 2](screenshots/campaign-details-page/campaign-detail-2-active-campaign.png)
+
+#### 2-Campagne annulée
 ![Cancelled campaign](screenshots/campaign-details-page/campaign-detail-cancelled.png)
+
+#### 3-Campagne succès (vu contributeur/visiteur)
 ![Success contributor view](screenshots/campaign-details-page/campaign-detail-success-contributor.png)
+
+#### 4-Campagne succès (vu propriétaire)
 ![Success owner view](screenshots/campaign-details-page/campaign-detail-success-owner.png)
+
+#### 5-Campagne succès (montant retiré)
 ![Success and withdrew](screenshots/campaign-details-page/campaign-detail-success-withdrew.png)
 
 ### Etherscan
