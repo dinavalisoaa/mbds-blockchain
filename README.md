@@ -185,6 +185,10 @@ mbds-blockchain/
 #### 2-Liste des transactions
 ![liste transaction](screenshots/home_page/list_transaction.png)
 
+### Page des tableaux de bord
+![Dashboard page](screenshots/dashboard-page/dashboard-1.jpg)
+![Dashboard page](screenshots/dashboard-page/dashboard-2.jpg)
+
 ### Etherscan
 ![etherscan](screenshots/etherscan_metamask/etherscan.png)
 
