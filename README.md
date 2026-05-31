@@ -168,6 +168,15 @@ mbds-blockchain/
 | `Cannot find module 'dotenv'` | Run `pnpm add -D dotenv` |
 | Contract calls fail after redeploy | Check `CONTRACT_ADDRESS` in `contract.js` is updated |
 
+---
+
+## Troubleshooting
+Une vidéo de démonstration est disponible pour illustrer le fonctionnement de la plateforme.
+Lien: [Vidéo de démonstration](https://youtu.be/hFjApUvPLj4?si=oOF3I9zPr6a5LgnL)
+
+Elle couvre l’architecture, les fonctionnalités principales ainsi que l’utilisation de l’application.
+
+---
 
 ## Captures d'écran
 
@@ -204,6 +213,14 @@ mbds-blockchain/
 
 #### 5-Campagne succès (montant retiré)
 ![Success and withdrew](screenshots/campaign-details-page/campaign-detail-success-withdrew.png)
+
+### Formulaire de modification d'une campagne
+![Edit campaign page](screenshots/edit-campaign-page/edit-campaign-1.jpg)
+![Edit campaign page](screenshots/edit-campaign-page/edit-campaign-2.jpg)
+
+### Page des tableaux de bord
+![Dashboard page](screenshots/dashboard-page/dashboard-1.jpg)
+![Dashboard page](screenshots/dashboard-page/dashboard-2.jpg)
 
 ### Etherscan
 ![etherscan](screenshots/etherscan_metamask/etherscan.png)
