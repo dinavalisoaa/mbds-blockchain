@@ -178,9 +178,9 @@ mbds-blockchain/
 ![Home page](screenshots/home_page/Card_list_filter1.png)
 
 ### Page d'accueil avec portefeuille connecté
-### Liste des campagnes avec formulaire de contributions
+#### 1-Liste des campagnes avec formulaire de contributions
 ![Home page connecter](screenshots/home_page/Home_page_connecte.png)
 ![Home page connecter](screenshots/home_page/Home_page_connecte1.png)
 
-### Liste des transactions
+#### 2-Liste des transactions
 ![liste transaction](screenshots/home_page/list_transaction.png)
