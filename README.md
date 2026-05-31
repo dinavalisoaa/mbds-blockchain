@@ -185,6 +185,10 @@ mbds-blockchain/
 #### 2-Liste des transactions
 ![liste transaction](screenshots/home_page/list_transaction.png)
 
+### Formulaire de modification d'une campagne
+![Edit campaign page](screenshots/edit-campaign-page/edit-campaign-1.jpg)
+![Edit campaign page](screenshots/edit-campaign-page/edit-campaign-2.jpg)
+
 ### Page des tableaux de bord
 ![Dashboard page](screenshots/dashboard-page/dashboard-1.jpg)
 ![Dashboard page](screenshots/dashboard-page/dashboard-2.jpg)
