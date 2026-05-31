@@ -457,8 +457,13 @@ export default function CampaignDetail({ wallet }) {
 
           {/* Closed = goal reached + funds withdrawn */}
           {c.status === "closed" && (
-            <div className="detail-closed-note" style={{ marginTop: "1rem" }}>
-              <i className="ti ti-lock" /> CAMPAGNE FERMÉE
+            <div style={{ marginTop: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <div className="detail-closed-note" style={{ color: "var(--green)" }}>
+                <i className="ti ti-trophy" /> OBJECTIF ATTEINT
+              </div>
+              <div className="detail-closed-note">
+                <i className="ti ti-lock" /> FONDS RETIRÉS — CAMPAGNE FERMÉE
+              </div>
             </div>
           )}
         </div>

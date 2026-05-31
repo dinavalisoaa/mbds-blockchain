@@ -33,15 +33,17 @@ function normalize(id, raw) {
   const expired     = now >= raw.deadline;
   const goalReached = raw.amountRaised >= raw.goal;
 
-  const status = !raw.exists              ? 'cancelled'
-               : goalReached && raw.withdrawn ? 'closed'
-               : goalReached               ? 'success'
-               : expired                   ? 'failed'
-               :                             'active';
+  const status = !raw.exists    ? 'cancelled'
+               : raw.withdrawn ? 'closed'
+               : goalReached   ? 'success'
+               : expired       ? 'failed'
+               :                 'active';
 
-  const progress = raw.goal > 0n
-    ? Math.min(100, Number((raw.amountRaised * 100n) / raw.goal))
-    : 0;
+  const progress = status === 'closed'
+    ? 100
+    : raw.goal > 0n
+      ? Math.min(100, Number((raw.amountRaised * 100n) / raw.goal))
+      : 0;
 
   return {
     id,
@@ -55,8 +57,8 @@ function normalize(id, raw) {
     goal:            raw.goal,
     goalEth:         fmtEth(raw.goal),
     deadline:        raw.deadline,
-    amountRaised:    raw.amountRaised,
-    amountRaisedEth: fmtEth(raw.amountRaised),
+    amountRaised:    status === 'closed' ? raw.goal : raw.amountRaised,
+    amountRaisedEth: status === 'closed' ? fmtEth(raw.goal) : fmtEth(raw.amountRaised),
     withdrawn:       raw.withdrawn,
     exists:          raw.exists,
     status,
