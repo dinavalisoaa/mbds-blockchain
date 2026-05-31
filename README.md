@@ -171,6 +171,16 @@ mbds-blockchain/
 
 ## Captures d'écran
 
-### Page d'accueil
-![Landing page en mode sombre sur ecran large](screenshots/home_page/Home_page1.png)
+### Page d'accueil sans portefeuille connecté
+### Liste des campagnes 
+![Home page](screenshots/home_page/Home_page1.png)
+![Home page](screenshots/home_page/Card_list_filter.png)
+![Home page](screenshots/home_page/Card_list_filter1.png)
 
+### Page d'accueil avec portefeuille connecté
+### Liste des campagnes avec formulaire de contributions
+![Home page connecter](screenshots/home_page/Home_page_connecte.png)
+![Home page connecter](screenshots/home_page/Home_page_connecte1.png)
+
+### Liste des transactions
+![liste transaction](screenshots/home_page/list_transaction.png)
