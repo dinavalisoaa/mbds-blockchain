@@ -168,6 +168,15 @@ mbds-blockchain/
 | `Cannot find module 'dotenv'` | Run `pnpm add -D dotenv` |
 | Contract calls fail after redeploy | Check `CONTRACT_ADDRESS` in `contract.js` is updated |
 
+---
+
+## Troubleshooting
+Une vidéo de démonstration est disponible pour illustrer le fonctionnement de la plateforme.
+Lien: [Vidéo de démonstration](https://youtu.be/hFjApUvPLj4?si=oOF3I9zPr6a5LgnL)
+
+Elle couvre l’architecture, les fonctionnalités principales ainsi que l’utilisation de l’application.
+
+---
 
 ## Captures d'écran
 
