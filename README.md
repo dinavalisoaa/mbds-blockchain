@@ -10,6 +10,16 @@ Smart contract (Solidity) + React frontend.
 
 ---
 
+## Description
+
+Ce projet est une plateforme de crowdfunding décentralisée permettant aux utilisateurs de financer et de soutenir des projets via la blockchain.
+
+Grâce à l’utilisation de smart contracts sur Ethereum, les transactions sont transparentes, sécurisées et ne nécessitent aucun intermédiaire. Les utilisateurs peuvent créer des campagnes, contribuer à des projets et suivre les financements en temps réel.
+
+L’application s’appuie sur une interface web développée en React, connectée à la blockchain via Ethers.js et MetaMask. Les contenus (images) sont stockés de manière décentralisée grâce à IPFS via Pinata.
+
+---
+
 ## Stack
 
 | Layer | Tech |
@@ -172,6 +182,7 @@ mbds-blockchain/
 
 ## Troubleshooting
 Une vidéo de démonstration est disponible pour illustrer le fonctionnement de la plateforme.
+
 Lien: [Vidéo de démonstration](https://youtu.be/hFjApUvPLj4?si=oOF3I9zPr6a5LgnL)
 
 Elle couvre l’architecture, les fonctionnalités principales ainsi que l’utilisation de l’application.
