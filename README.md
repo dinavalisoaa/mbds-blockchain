@@ -167,3 +167,10 @@ mbds-blockchain/
 | `Deployer has 0 ETH` | Get Sepolia ETH from faucet |
 | `Cannot find module 'dotenv'` | Run `pnpm add -D dotenv` |
 | Contract calls fail after redeploy | Check `CONTRACT_ADDRESS` in `contract.js` is updated |
+
+
+## Captures d'écran
+
+### Page d'accueil
+![Landing page en mode sombre sur ecran large](screenshots/home_page/Home_page1.png)
+
